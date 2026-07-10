@@ -38,7 +38,7 @@ Osmedeus 支持三种工作流类型：
 
 ### 工作流类型
 
-```go theme={null}
+```go
 type Workflow struct {
     Kind         WorkflowKind  // module, flow, fragment
     Name         string        // 唯一标识符
@@ -71,7 +71,7 @@ type Workflow struct {
 
 ### 步骤类型
 
-```go theme={null}
+```go
 type Step struct {
     Name         string      // 唯一步骤标识符
     Type         StepType    // 步骤类型
@@ -173,7 +173,7 @@ type Step struct {
 
 ### InheritanceResolver 类型
 
-```go theme={null}
+```go
 type InheritanceResolver struct {
     loader    *Loader
     resolving map[string]bool  // 跟踪正在解析的工作流（循环检测）
@@ -191,7 +191,7 @@ type InheritanceResolver struct {
 
 ### 覆盖模式
 
-```go theme={null}
+```go
 const (
     OverrideModeReplace OverrideMode = "replace"   // 完全替换父项
     OverrideModePrepend OverrideMode = "prepend"   // 在父项之前添加子项
@@ -202,7 +202,7 @@ const (
 
 ### WorkflowOverride 类型
 
-```go theme={null}
+```go
 type WorkflowOverride struct {
     Params       map[string]*ParamOverride  // 覆盖参数属性
     Steps        *StepsOverride             // 步骤覆盖（仅 module）
@@ -217,7 +217,7 @@ type WorkflowOverride struct {
 
 ### StepsOverride 类型
 
-```go theme={null}
+```go
 type StepsOverride struct {
     Mode    OverrideMode  // replace, prepend, append, merge
     Steps   []Step        // 要添加/匹配的步骤
@@ -250,7 +250,7 @@ type StepsOverride struct {
 
 ### 片段定义
 
-```yaml theme={null}
+```yaml
 kind: fragment
 name: notification-fragment
 description: 通用通知步骤
@@ -268,7 +268,7 @@ steps:
 
 模块可以使用 `includes` 字段包含片段：
 
-```yaml theme={null}
+```yaml
 kind: module
 name: subdomain-enum
 includes:
@@ -289,7 +289,7 @@ steps:
 
 ### FragmentInclude 类型
 
-```go theme={null}
+```go
 type FragmentInclude struct {
     Name   string            // 片段工作流名称
     As     string            // 本地别名
@@ -306,7 +306,7 @@ type FragmentInclude struct {
 
 ### 片段步骤类型
 
-```go theme={null}
+```go
 type Step struct {
     // ... 其他字段
     Type         StepType // "fragment"
@@ -393,7 +393,7 @@ type Step struct {
 
 ### LinterRule 接口
 
-```go theme={null}
+```go
 type LinterRule interface {
     Name() string                    // 唯一标识符
     Description() string             // 人类可读的描述
@@ -404,7 +404,7 @@ type LinterRule interface {
 
 ### LintIssue 类型
 
-```go theme={null}
+```go
 type LintIssue struct {
     Rule       string   // 规则名称
     Severity   Severity // 问题严重级别
@@ -420,7 +420,7 @@ type LintIssue struct {
 
 #### CLI 用法
 
-```bash theme={null}
+```bash
 # 按名称验证
 osmedeus workflow validate subdomain-enum
 
@@ -446,7 +446,7 @@ workflows/test.yaml:15:12 warning undefined-variable
 
 **JSON**：
 
-```json theme={null}
+```json
 {
   "file_path": "workflows/test.yaml",
   "issues": [
@@ -470,7 +470,7 @@ workflows/test.yaml:15:12 warning undefined-variable
 
 ### 禁用规则
 
-```bash theme={null}
+```bash
 # 禁用特定规则
 osmedeus workflow lint . --disable unused-variable,empty-step
 ```
@@ -479,7 +479,7 @@ osmedeus workflow lint . --disable unused-variable,empty-step
 
 实现 `LinterRule` 接口：
 
-```go theme={null}
+```go
 type MyCustomRule struct{}
 
 func (r *MyCustomRule) Name() string { return "my-custom-rule" }
@@ -522,7 +522,7 @@ linter.RegisterRule(&MyCustomRule{})
 
 步骤支持条件分支：
 
-```yaml theme={null}
+```yaml
 decision:
   switch: "{{status}}"
   cases:
@@ -534,7 +534,7 @@ decision:
 
 ### DecisionConfig 类型
 
-```go theme={null}
+```go
 type DecisionConfig struct {
     Switch  string                  // 要评估的变量
     Cases   map[string]DecisionCase // 情况映射
@@ -548,5 +548,5 @@ type DecisionCase struct {
 
 ## 工作流执行上下文
 
-```go theme={null}
+```go
 type ExecutionContext struct {

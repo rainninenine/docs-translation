@@ -14,7 +14,7 @@ Runner 在不同环境中执行 bash 命令。Osmedeus 包含 Host、Docker 和 
 
 所有 Runner 在 `internal/runner/runner.go` 中实现此接口：
 
-```go theme={null}
+```go
 type Runner interface {
     Execute(ctx context.Context, command string) (*CommandResult, error)
     Setup(ctx context.Context) error
@@ -36,7 +36,7 @@ type CommandResult struct {
 
 在 `internal/core/types.go` 中添加：
 
-```go theme={null}
+```go
 type RunnerType string
 
 const (
@@ -51,7 +51,7 @@ const (
 
 更新 `internal/core/workflow.go`：
 
-```go theme={null}
+```go
 type RunnerConfig struct {
     // 现有字段...
 
@@ -65,7 +65,7 @@ type RunnerConfig struct {
 
 创建 `internal/runner/mynew_runner.go`：
 
-```go theme={null}
+```go
 package runner
 
 import (
@@ -151,7 +151,7 @@ func (r *MyNewRunner) CopyFromRemote(ctx context.Context, remotePath, localPath 
 
 更新 `internal/runner/runner.go`：
 
-```go theme={null}
+```go
 func NewRunnerFromType(
     runnerType core.RunnerType,
     config *core.RunnerConfig,
@@ -176,7 +176,7 @@ func NewRunnerFromType(
 
 更新 `internal/parser/validator.go`：
 
-```go theme={null}
+```go
 func (v *Validator) validateRunnerConfig(runnerType core.RunnerType, config *core.RunnerConfig) error {
     switch runnerType {
     case core.RunnerTypeMyNew:
@@ -195,7 +195,7 @@ func (v *Validator) validateRunnerConfig(runnerType core.RunnerType, config *cor
 
 创建 `internal/runner/mynew_runner_test.go`：
 
-```go theme={null}
+```go
 package runner
 
 import (
@@ -229,7 +229,7 @@ func TestMyNewRunner_Execute(t *testing.T) {
 
 ## 示例：Kubernetes Runner
 
-```go theme={null}
+```go
 // internal/runner/k8s_runner.go
 
 type K8sRunner struct {
@@ -322,7 +322,7 @@ func (r *K8sRunner) Cleanup(ctx context.Context) error {
 
 在工作流中的使用：
 
-```yaml theme={null}
+```yaml
 kind: module
 name: k8s-scan
 runner: k8s

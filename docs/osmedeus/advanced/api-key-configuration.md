@@ -24,7 +24,7 @@
 
 创建或修改 `registry-metadata.json`：
 
-```json theme={null}
+```json
 {
   "mytool": {
     "desc": "mytool 的描述",
@@ -60,7 +60,7 @@
 
 ### 使用自定义注册表
 
-```bash theme={null}
+```bash
 # 使用本地注册表
 osmedeus install binary -n mytool -r /path/to/registry.json
 
@@ -76,7 +76,7 @@ osmedeus install binary -n mytool -r https://example.com/registry.json
 
 ### 配置
 
-```yaml theme={null}
+```yaml
 global_vars:
   # GitHub API（用于资产发现）
   GITHUB_API_KEY:
@@ -114,14 +114,14 @@ global_vars:
 
 ### 通过 CLI 设置
 
-```bash theme={null}
+```bash
 osmedeus config set global_vars.GITHUB_API_KEY ghp_xxxx
 osmedeus config set global_vars.SHODAN_API_KEY xxxx
 ```
 
 ### 在工作流中使用
 
-```yaml theme={null}
+```yaml
 # 作为模板变量
 - command: 'curl -H "Authorization: token {{GITHUB_API_KEY}}" https://api.github.com/...'
 
@@ -133,7 +133,7 @@ osmedeus config set global_vars.SHODAN_API_KEY xxxx
 
 ### 在工作流中使用
 
-```yaml theme={null}
+```yaml
 - name: upload-results
   type: function
   function: 'cdnUpload("{{Output}}/results.json", "scans/{{Target}}/results.json")'
@@ -151,7 +151,7 @@ osmedeus config set global_vars.SHODAN_API_KEY xxxx
 
 ### 配置
 
-```yaml theme={null}
+```yaml
 llm_config:
   llm_providers:
     # 主供应商
@@ -186,7 +186,7 @@ llm_config:
 
 ### 在工作流中使用
 
-```yaml theme={null}
+```yaml
 - name: analyze
   type: llm
   messages:
@@ -204,7 +204,7 @@ llm_config:
 
 ### SQLite（默认）
 
-```yaml theme={null}
+```yaml
 database:
   db_engine: sqlite
   db_path: "{{base_folder}}/database-osm.sqlite"
@@ -212,7 +212,7 @@ database:
 
 ### PostgreSQL
 
-```yaml theme={null}
+```yaml
 database:
   db_engine: postgresql
   host: localhost
@@ -226,7 +226,7 @@ database:
 
 ### 通过 CLI 设置
 
-```bash theme={null}
+```bash
 osmedeus config set database.db_engine postgresql
 osmedeus config set database.host localhost
 osmedeus config set database.password mypassword
@@ -238,7 +238,7 @@ osmedeus config set database.password mypassword
 
 ### 简单认证（用户名/密码）
 
-```yaml theme={null}
+```yaml
 server:
   simple_user_map_key:
     admin: "secure_password"
@@ -247,7 +247,7 @@ server:
 
 ### JWT 配置
 
-```yaml theme={null}
+```yaml
 server:
   jwt:
     secret_signing_key: "change-this-to-random-string"
@@ -256,7 +256,7 @@ server:
 
 ### API 密钥认证
 
-```yaml theme={null}
+```yaml
 server:
   enabled_auth_api: true
   auth_api_key: "your-secure-api-key"
@@ -266,7 +266,7 @@ server:
 
 ### 通过 CLI 设置
 
-```bash theme={null}
+```bash
 osmedeus config set server.username admin
 osmedeus config set server.password secure123
 osmedeus config set server.jwt.secret_signing_key random_key_here
@@ -280,7 +280,7 @@ osmedeus config set server.auth_api_key my-api-key
 
 配置不同扫描强度的线程数：
 
-```yaml theme={null}
+```yaml
 scan_tactic:
   aggressive: 40   # --tactic aggressive
   default: 10      # 默认行为
@@ -289,7 +289,7 @@ scan_tactic:
 
 用法：
 
-```bash theme={null}
+```bash
 osmedeus run -m recon -t example.com --tactic aggressive
 osmedeus run -m recon -t example.com --tactic gently
 ```
@@ -298,7 +298,7 @@ osmedeus run -m recon -t example.com --tactic gently
 
 ## 环境路径
 
-```yaml theme={null}
+```yaml
 environments:
   external_binaries_path: "{{base_folder}}/external-binaries"
   external_data: "{{base_folder}}/external-data"

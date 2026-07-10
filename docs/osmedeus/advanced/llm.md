@@ -20,7 +20,7 @@ Osmedeus 提供三种用于 LLM 集成的步骤类型：
 
 在 `osm-settings.yaml` 中，在 `llm_providers` 下配置一个或多个供应商。供应商会在请求间自动轮换：
 
-```yaml theme={null}
+```yaml
 llm:
   llm_providers:
     - provider: openai
@@ -40,7 +40,7 @@ llm:
 
 环境变量会覆盖默认供应商的设置：
 
-```bash theme={null}
+```bash
 export OSM_LLM_BASE_URL=https://api.openai.com/v1
 export OSM_LLM_AUTH_TOKEN=sk-...
 export OSM_LLM_MODEL=gpt-4
@@ -50,7 +50,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 基本用法
 
-```yaml theme={null}
+```yaml
 - name: analyze-results
   type: llm
   messages:
@@ -80,7 +80,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 多轮对话
 
-```yaml theme={null}
+```yaml
 - name: chat
   type: llm
   messages:
@@ -98,7 +98,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 定义工具
 
-```yaml theme={null}
+```yaml
 - name: intelligent-scan
   type: llm
   messages:
@@ -141,7 +141,7 @@ export OSM_LLM_MODEL=gpt-4
 
 工具调用在 `_llm_resp` 对象中导出：
 
-```yaml theme={null}
+```yaml
 - name: ai-scan
   type: llm
   messages:
@@ -167,7 +167,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 生成嵌入
 
-```yaml theme={null}
+```yaml
 - name: embed-findings
   type: llm
   is_embedding: true
@@ -181,7 +181,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 与文件一起使用
 
-```yaml theme={null}
+```yaml
 - name: embed-vulns
   type: llm
   is_embedding: true
@@ -194,7 +194,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### JSON Schema
 
-```yaml theme={null}
+```yaml
 - name: extract-findings
   type: llm
   messages:
@@ -230,7 +230,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 每步配置
 
-```yaml theme={null}
+```yaml
 - name: local-analysis
   type: llm
   llm_config:
@@ -246,7 +246,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 额外参数
 
-```yaml theme={null}
+```yaml
 - name: creative-analysis
   type: llm
   messages:
@@ -262,7 +262,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 图像分析
 
-```yaml theme={null}
+```yaml
 - name: analyze-screenshot
   type: llm
   messages:
@@ -279,7 +279,7 @@ export OSM_LLM_MODEL=gpt-4
 
 `llm` 和 `agent` 步骤都支持通过 `stream` 字段进行流式输出：
 
-```yaml theme={null}
+```yaml
 - name: stream-analysis
   type: llm
   stream: true
@@ -298,7 +298,7 @@ export OSM_LLM_MODEL=gpt-4
 
 ### 基本 Agent
 
-```yaml theme={null}
+```yaml
 - name: recon-agent
   type: agent
   query: "枚举 {{Target}} 的子域名并识别感兴趣的服务。"
@@ -320,13 +320,13 @@ export OSM_LLM_MODEL=gpt-4
 | `max_iterations` | int             | 是      | 最大工具调用循环迭代次数（必须 > 0）        |
 | `agent_tools`    | AgentToolDef\[] | 否      | 代理可用的工具                              |
 
-<Note>需要 `query`（单目标）或 `queries`（多目标）之一，不能同时使用。</Note>
+!!! note "需要 `query`（单目标）或 `queries`（多目标）之一，不能同时使用。"
 
 ### 预设工具
 
 预设工具引用 Osmedeus 内置函数，并自动生成 schema：
 
-```yaml theme={null}
+```yaml
 agent_tools:
   - preset: bash
   - preset: read_file
@@ -359,7 +359,7 @@ agent_tools:
 
 使用显式 schema 和 JavaScript 处理器定义自定义工具：
 
-```yaml theme={null}
+```yaml
 agent_tools:
   - preset: bash
   - name: check_port
@@ -384,7 +384,7 @@ agent_tools:
 
 使用 `queries` 让代理按顺序执行多个目标。每个目标依次执行，所有结果都会被收集：
 
-```yaml theme={null}
+```yaml
 - name: full-recon
   type: agent
   queries:
@@ -408,7 +408,7 @@ agent_tools:
 
 在主执行循环之前添加规划阶段。代理首先生成计划，然后执行：
 
-```yaml theme={null}
+```yaml
 - name: planned-scan
   type: agent
   query: "对 {{Target}} 执行全面的安全评估"
@@ -435,7 +435,7 @@ agent_tools:
 
 控制长时间运行代理的对话上下文大小：
 
-```yaml theme={null}
+```yaml
 - name: long-running-agent
   type: agent
   query: "对 {{Target}} 执行深度侦察"
@@ -462,7 +462,7 @@ agent_tools:
 
 指定按顺序尝试的首选模型。如果都不可用，则回退到默认供应商配置：
 
-```yaml theme={null}
+```yaml
 - name: smart-agent
   type: agent
   query: "分析 {{Target}} 的复杂目标架构"
@@ -479,7 +479,7 @@ agent_tools:
 
 使用 `output_schema` 对代理的最终输出强制执行 JSON schema：
 
-```yaml theme={null}
+```yaml
 - name: structured-agent
   type: agent
   query: "查找 {{Target}} 上的所有开放端口和服务"
@@ -498,7 +498,7 @@ agent_tools:
 
 定义内联子代理，父代理可以通过自动生成的 `spawn_agent` 工具生成它们：
 
-```yaml theme={null}
+```yaml
 - name: coordinator
   type: agent
   query: "使用每个阶段的专业子代理评估 {{Target}}。"
@@ -540,7 +540,7 @@ agent_tools:
 
 一个 JavaScript 表达式，在每次迭代后评估。如果返回 `true`，代理停止：
 
-```yaml theme={null}
+```yaml
 - name: targeted-scan
   type: agent
   query: "查找 {{Target}} 的管理面板"
@@ -557,7 +557,7 @@ agent_tools:
 
 在每次工具调用前后执行的 JavaScript 表达式，用于日志记录或调试：
 
-```yaml theme={null}
+```yaml
 - name: traced-agent
   type: agent
   query: "扫描 {{Target}}"
@@ -578,5 +578,5 @@ agent_tools:
 
 默认情况下，代理允许 LLM 并行进行多个工具调用。禁用此功能以进行顺序执行：
 
-```yaml theme={null}
+```yaml
 -

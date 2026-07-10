@@ -19,7 +19,7 @@
 
 ### CLI
 
-```bash theme={null}
+```bash
 # 导出项目空间
 osmedeus snapshot export example.com
 
@@ -32,7 +32,7 @@ osmedeus snapshot export example.com -o ~/archives/
 
 ### API
 
-```bash theme={null}
+```bash
 curl -X POST http://localhost:8002/osm/api/snapshots/export \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -60,7 +60,7 @@ example.com-20240115-143022.zip
 
 ### CLI
 
-```bash theme={null}
+```bash
 # 从本地文件导入
 osmedeus snapshot import ~/backup.zip
 
@@ -76,7 +76,7 @@ osmedeus snapshot import ~/backup.zip --skip-db
 
 ### API
 
-```bash theme={null}
+```bash
 # 从 URL 导入
 curl -X POST http://localhost:8002/osm/api/snapshots/import \
   -H "Authorization: Bearer $TOKEN" \
@@ -98,13 +98,13 @@ curl -X POST http://localhost:8002/osm/api/snapshots/import \
 
 ### CLI
 
-```bash theme={null}
+```bash
 osmedeus snapshot list
 ```
 
 ### API
 
-```bash theme={null}
+```bash
 curl http://localhost:8002/osm/api/snapshots \
   -H "Authorization: Bearer $TOKEN"
 ```
@@ -124,7 +124,7 @@ curl http://localhost:8002/osm/api/snapshots \
 
 ## 下载
 
-```bash theme={null}
+```bash
 # 通过 API 下载
 curl http://localhost:8002/osm/api/snapshots/download/example.com-backup.zip \
   -H "Authorization: Bearer $TOKEN" \
@@ -133,7 +133,7 @@ curl http://localhost:8002/osm/api/snapshots/download/example.com-backup.zip \
 
 ## 删除
 
-```bash theme={null}
+```bash
 curl -X DELETE http://localhost:8002/osm/api/snapshots/example.com-backup.zip \
   -H "Authorization: Bearer $TOKEN"
 ```
@@ -144,7 +144,7 @@ curl -X DELETE http://localhost:8002/osm/api/snapshots/example.com-backup.zip \
 
 在 `osm-settings.yaml` 中配置：
 
-```yaml theme={null}
+```yaml
 environments:
   storages: "{{base_folder}}/snapshots"
 ```
@@ -153,7 +153,7 @@ environments:
 
 ### 在破坏性扫描前备份
 
-```bash theme={null}
+```bash
 # 备份当前状态
 osmedeus snapshot export example.com
 
@@ -166,7 +166,7 @@ osmedeus snapshot import ~/osmedeus-base/snapshots/example.com-*.zip --force
 
 ### 共享结果
 
-```bash theme={null}
+```bash
 # 导出项目空间
 osmedeus snapshot export client-assessment -o /tmp/results.zip
 
@@ -176,7 +176,7 @@ aws s3 cp /tmp/results.zip s3://bucket/results.zip
 
 ### 迁移到另一台机器
 
-```bash theme={null}
+```bash
 # 在源机器上
 osmedeus snapshot export example.com -o /tmp/workspace.zip
 scp /tmp/workspace.zip user@target:/tmp/
@@ -187,7 +187,7 @@ osmedeus snapshot import /tmp/workspace.zip
 
 ### 归档已完成的项目
 
-```bash theme={null}
+```bash
 # 导出并压缩
 osmedeus snapshot export project-2024 -o /archives/project-2024.zip
 
@@ -202,7 +202,7 @@ osmedeus snapshot import /archives/project-2024.zip
 
 每个快照包含 `metadata.json`：
 
-```json theme={null}
+```json
 {
   "version": "1.0",
   "workspace": "example.com",
@@ -222,7 +222,7 @@ osmedeus snapshot import /archives/project-2024.zip
 
 `database.json` 包含：
 
-```json theme={null}
+```json
 {
   "assets": [
     {
@@ -258,7 +258,7 @@ osmedeus snapshot import /archives/project-2024.zip
 
 ### 强制覆盖
 
-```bash theme={null}
+```bash
 osmedeus snapshot import backup.zip --force
 ```
 
@@ -268,7 +268,7 @@ osmedeus snapshot import backup.zip --force
 
 ### 跳过数据库
 
-```bash theme={null}
+```bash
 osmedeus snapshot import backup.zip --skip-db
 ```
 
@@ -280,7 +280,7 @@ osmedeus snapshot import backup.zip --skip-db
 
 ### 导出到 S3
 
-```bash theme={null}
+```bash
 # 本地导出
 osmedeus snapshot export example.com -o /tmp/backup.zip
 
@@ -296,7 +296,7 @@ storage:
 
 ### 从 S3 导入
 
-```bash theme={null}
+```bash
 # 生成预签名 URL
 URL=$(aws s3 presign s3://bucket/snapshots/backup.zip)
 
@@ -316,7 +316,7 @@ osmedeus snapshot import "$URL"
 
 ### 导入失败
 
-```bash theme={null}
+```bash
 # 检查文件完整性
 unzip -t backup.zip
 
@@ -326,7 +326,7 @@ osmedeus snapshot import backup.zip -v
 
 ### 导入后文件缺失
 
-```bash theme={null}
+```bash
 # 检查是否使用了 --skip-db
 # 重新导入并包含数据库
 osmedeus snapshot import backup.zip
@@ -334,7 +334,7 @@ osmedeus snapshot import backup.zip
 
 ### 快照体积过大
 
-```bash theme={null}
+```bash
 # 检查项目空间内容
 du -sh ~/osmedeus-base/workspaces/example.com/*
 

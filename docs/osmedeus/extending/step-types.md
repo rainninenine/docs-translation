@@ -16,7 +16,7 @@
 
 添加到 `internal/core/types.go`：
 
-```go theme={null}
+```go
 // StepType 表示步骤的类型
 type StepType string
 
@@ -36,7 +36,7 @@ const (
 
 添加到 `internal/core/step.go`：
 
-```go theme={null}
+```go
 type Step struct {
     // 现有字段...
 
@@ -55,7 +55,7 @@ type MyNewConfig struct {
 
 创建 `internal/executor/mynew_executor.go`：
 
-```go theme={null}
+```go
 package executor
 
 import (
@@ -116,7 +116,7 @@ func (e *MyNewExecutor) doSomething(
 
 更新 `internal/executor/dispatcher.go`：
 
-```go theme={null}
+```go
 type StepDispatcher struct {
     bashExecutor       *BashExecutor
     functionExecutor   *FunctionExecutor
@@ -162,7 +162,7 @@ func (d *StepDispatcher) Dispatch(
 
 更新 `internal/parser/validator.go`：
 
-```go theme={null}
+```go
 func (v *Validator) validateStep(step *core.Step) error {
     switch step.Type {
     // ... 现有 case ...
@@ -184,7 +184,7 @@ func (v *Validator) validateMyNewStep(step *core.Step) error {
 
 创建 `internal/executor/mynew_executor_test.go`：
 
-```go theme={null}
+```go
 package executor
 
 import (
@@ -223,7 +223,7 @@ func TestMyNewExecutor_Execute(t *testing.T) {
 
 ## 示例：自定义通知步骤
 
-```go theme={null}
+```go
 // internal/executor/notify_executor.go
 
 type NotifyExecutor struct {
@@ -261,7 +261,7 @@ func (e *NotifyExecutor) Execute(
 
 在工作流中的使用：
 
-```yaml theme={null}
+```yaml
 - name: notify-complete
   type: notify
   notify_channel: slack

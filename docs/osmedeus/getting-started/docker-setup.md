@@ -19,7 +19,7 @@ Osmedeus 提供多种 Docker 部署选项，以适应不同使用场景：
 * **Docker** 版本 20.10 或更高
 * **Docker Compose** 版本 2.0 或更高（Docker Desktop 已包含）
 
-```bash theme={null}
+```bash
 # 验证安装
 docker --version
 docker compose version
@@ -31,7 +31,7 @@ Toolbox 镜像是开始使用的最快方式。它通过官方安装脚本预装
 
 ### 使用 Make 目标
 
-```bash theme={null}
+```bash
 # 构建 toolbox 镜像
 make docker-toolbox
 
@@ -44,7 +44,7 @@ make docker-toolbox-shell
 
 ### 手动 Docker 命令
 
-```bash theme={null}
+```bash
 # 构建镜像
 docker compose -f build/docker/docker-compose.toolbox.yaml build
 
@@ -68,7 +68,7 @@ docker exec -it osmedeus-toolbox osmedeus run -m subdomain -t example.com
 
 进入容器 shell 并交互式运行扫描：
 
-```bash theme={null}
+```bash
 docker exec -it osmedeus-toolbox bash
 
 # 在容器内部
@@ -81,7 +81,7 @@ osmedeus workflow list
 
 无需进入容器即可运行扫描：
 
-```bash theme={null}
+```bash
 # 运行模块
 docker exec -it osmedeus-toolbox osmedeus run -m subdomain -t example.com
 
@@ -96,7 +96,7 @@ docker exec -it osmedeus-toolbox osmedeus workflow list
 
 如需在宿主机访问扫描结果，可挂载本地目录：
 
-```bash theme={null}
+```bash
 docker run -it --rm \
   -v $(pwd)/workspaces:/root/workspaces-osmedeus \
   -v $(pwd)/osmedeus-base:/root/osmedeus-base \
@@ -110,7 +110,7 @@ docker run -it --rm \
 
 在 toolbox 容器内启动 REST API 服务器：
 
-```bash theme={null}
+```bash
 # 后台启动
 docker exec -d osmedeus-toolbox osmedeus serve --port 8002 --host 0.0.0.0
 
@@ -123,7 +123,7 @@ osmedeus serve --port 8002 --host 0.0.0.0
 
 API 服务器默认使用 JWT 身份验证。在 `osm-settings.yaml` 中配置凭据：
 
-```yaml theme={null}
+```yaml
 server:
   host: "0.0.0.0"
   port: 8002
@@ -136,13 +136,13 @@ server:
 
 启用身份验证后启动：
 
-```bash theme={null}
+```bash
 osmedeus serve --port 8002 --host 0.0.0.0
 ```
 
 开发环境无需身份验证时，使用 `-A` 标志：
 
-```bash theme={null}
+```bash
 osmedeus serve --port 8002 --host 0.0.0.0 -A
 ```
 
@@ -183,7 +183,7 @@ osmedeus serve --port 8002 --host 0.0.0.0 -A
 
 基础 compose 文件（`docker-compose.yml`）包含 Redis、主节点和 Worker，使用 SQLite：
 
-```bash theme={null}
+```bash
 # 启动分布式栈
 docker compose -f build/docker/docker-compose.yml up -d
 
@@ -203,13 +203,13 @@ docker compose -f build/docker/docker-compose.yml down
 
 **步骤 1：创建环境文件**
 
-```bash theme={null}
+```bash
 cp build/docker/.env.example build/docker/.env
 ```
 
 编辑 `.env` 文件，填入安全值：
 
-```bash theme={null}
+```bash
 # PostgreSQL 配置
 POSTGRES_USER=osmedeus
 POSTGRES_PASSWORD=your_secure_postgres_password
@@ -234,7 +234,7 @@ WORKER_REPLICAS=2
 
 生产环境 compose 文件挂载了 `osm-settings.production.yaml`。关键设置如下：
 
-```yaml theme={null}
+```yaml
 # 数据库 - 生产环境使用 PostgreSQL
 database:
   db_engine: postgresql
@@ -264,7 +264,7 @@ redis:
 
 **步骤 3：启动生产环境栈**
 
-```bash theme={null}
+```bash
 # 先启动基础设施
 docker compose -f build/docker/docker-compose.production.yaml up -d postgres redis
 
@@ -294,7 +294,7 @@ docker compose -f build/docker/docker-compose.production.yaml up -d --scale work
 
 可根据工作负载动态扩展 Worker：
 
-```bash theme={null}
+```bash
 # 扩展到 10 个 Worker
 docker compose -f build/docker/docker-compose.production.yaml up -d --scale worker=10
 
@@ -313,7 +313,7 @@ docker compose -f build/docker/docker-compose.production.yaml up -d --scale work
 
 生产环境 Dockerfile（`build/docker/Dockerfile`）创建最小化镜像：
 
-```bash theme={null}
+```bash
 # 使用 make 构建
 make docker-build
 
@@ -328,7 +328,7 @@ docker build -t osmedeus:latest \
 
 用于热重载的开发环境：
 
-```bash theme={null}
+```bash
 docker build -t osmedeus:dev -f build/docker/Dockerfile.dev .
 
 docker run -it --rm \
@@ -347,7 +347,7 @@ docker run -it --rm \
 
 构建包含所有工具的完整功能 Toolbox：
 
-```bash theme={null}
+```bash
 docker build -t osmedeus-toolbox:latest \
   -f build/docker/Dockerfile.toolbox \
   .
@@ -364,7 +364,7 @@ Osmedeus 使用两个主要数据目录：
 
 ### 备份卷
 
-```bash theme={null}
+```bash
 # 列出卷
 docker volume ls | grep osmedeus
 
@@ -383,7 +383,7 @@ docker run --rm \
 
 ### 删除卷
 
-```bash theme={null}
+```bash
 # 删除所有 osmedeus 卷（警告：将删除所有数据）
 docker compose -f build/docker/docker-compose.production.yaml down -v
 ```
@@ -392,7 +392,7 @@ docker compose -f build/docker/docker-compose.production.yaml down -v
 
 ### 容器无法启动
 
-```bash theme={null}
+```bash
 # 检查容器日志
 docker logs osmedeus-toolbox
 
@@ -404,7 +404,7 @@ docker compose -f build/docker/docker-compose.yml logs -f master
 
 如果遇到挂载卷的权限问题：
 
-```bash theme={null}
+```bash
 # 以 root 用户运行容器（默认）
 docker exec -u root -it osmedeus-toolbox bash
 
@@ -416,7 +416,7 @@ sudo chown -R $(id -u):$(id -g) ./workspaces
 
 对于 PostgreSQL 连接问题：
 
-```bash theme={null}
+```bash
 # 检查 PostgreSQL 是否健康
 docker compose -f build/docker/docker-compose.production.yaml ps postgres
 
@@ -426,7 +426,7 @@ docker exec osmedeus-server psql -h postgres -U osmedeus -d osmedeus -c "SELECT 
 
 ### Redis 连接错误
 
-```bash theme={null}
+```bash
 # 检查 Redis 是否健康
 docker exec osmedeus-redis redis-cli ping
 
@@ -436,7 +436,7 @@ docker exec osmedeus-redis redis-cli -a your_password ping
 
 ### 健康检查失败
 
-```bash theme={null}
+```bash
 # 检查主节点健康端点
 curl http://localhost:8002/health
 
@@ -448,7 +448,7 @@ docker inspect --format='{{json .State.Health}}' osmedeus-server | jq
 
 如果 Worker 内存不足，可在 compose 文件中调整资源限制：
 
-```yaml theme={null}
+```yaml
 worker:
   deploy:
     resources:

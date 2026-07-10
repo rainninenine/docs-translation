@@ -1,19 +1,11 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索之前，请使用此文件发现所有可用页面。
-
 # AWS Provider Guide
 
 > 在 AWS EC2 实例上运行 osmedeus cloud 的分步指南
 
 <Columns cols={2}>
-  <Frame caption="配置实例">
-    <img src="https://mintcdn.com/osmedeus/-AJASvFBPI8cnc5L/images/cloud/osm-cloud-provision.png?fit=max&auto=format&n=-AJASvFBPI8cnc5L&q=85&s=9bc330cde3d3d150e00820521cd3aa9f" alt="web-ui-vuln" width="3824" height="2366" data-path="images/cloud/osm-cloud-provision.png" />
-  </Frame>
+  ![web-ui-vuln](https://mintcdn.com/osmedeus/-AJASvFBPI8cnc5L/images/cloud/osm-cloud-provision.png?fit=max&auto=format&n=-AJASvFBPI8cnc5L&q=85&s=9bc330cde3d3d150e00820521cd3aa9f)
 
-  <Frame caption="启动云扫描">
-    <img src="https://mintcdn.com/osmedeus/-AJASvFBPI8cnc5L/images/cloud/osm-cloud-start-scan.png?fit=max&auto=format&n=-AJASvFBPI8cnc5L&q=85&s=a270d5d0a309f935992fd81dd5a26598" alt="web-ui-assets" width="3824" height="2268" data-path="images/cloud/osm-cloud-start-scan.png" />
-  </Frame>
+  ![web-ui-assets](https://mintcdn.com/osmedeus/-AJASvFBPI8cnc5L/images/cloud/osm-cloud-start-scan.png?fit=max&auto=format&n=-AJASvFBPI8cnc5L&q=85&s=a270d5d0a309f935992fd81dd5a26598)
 </Columns>
 
 在 AWS EC2 实例上运行 osmedeus cloud 的分步指南。
@@ -51,7 +43,7 @@ ec2:CreateTags
 
 或者，如果已为 AWS CLI 配置，则使用环境变量：
 
-```bash theme={null}
+```bash
 export AWS_ACCESS_KEY_ID=<YOUR_AWS_ACCESS_KEY_ID>
 export AWS_SECRET_ACCESS_KEY=<YOUR_AWS_SECRET_ACCESS_KEY>
 ```
@@ -60,7 +52,7 @@ export AWS_SECRET_ACCESS_KEY=<YOUR_AWS_SECRET_ACCESS_KEY>
 
 ### Minimal Setup
 
-```bash theme={null}
+```bash
 # 启用云功能
 osmedeus config set cloud.enabled true
 
@@ -94,7 +86,7 @@ osmedeus cloud config set setup.commands.add "osmedeus health"
 | t3.xlarge  | 4    | 16 GB | \$0.1664          | \~\$0.050               | 重型扫描，大量目标列表 |
 | t3.2xlarge | 8    | 32 GB | \$0.3328          | \~\$0.100               | 并行流水线              |
 
-```bash theme={null}
+```bash
 # 设置实例类型
 osmedeus cloud config set providers.aws.instance_type t3.large
 ```
@@ -103,7 +95,7 @@ osmedeus cloud config set providers.aws.instance_type t3.large
 
 竞价实例成本比按需低 60-80%。它们可能被中断，但对于安全扫描（无状态，可重试）来说没问题。
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.aws.use_spot true
 ```
 
@@ -122,7 +114,7 @@ osmedeus cloud config set providers.aws.use_spot true
 | 亚太地区（孟买）    | 亚洲      | `ap-south-1`     |
 | 亚太地区（悉尼）    | 澳大利亚 | `ap-southeast-2` |
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.aws.region us-east-1
 ```
 
@@ -130,7 +122,7 @@ osmedeus cloud config set providers.aws.region us-east-1
 
 使用预装工具的自定义 AMI 以加快启动速度：
 
-```bash theme={null}
+```bash
 # 查找你所在区域的默认 Ubuntu AMI
 # aws ec2 describe-images --owners 099720109477 --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-*-amd64-*" --query 'sort_by(Images, &CreationDate)[-1].ImageId'
 
@@ -140,7 +132,7 @@ osmedeus cloud config set providers.aws.ami ami-0123456789abcdef0
 
 ### Cost Limits
 
-```bash theme={null}
+```bash
 osmedeus cloud config set limits.max_hourly_spend 1.00
 osmedeus cloud config set limits.max_total_spend 10.00
 osmedeus cloud config set limits.max_instances 10
@@ -150,7 +142,7 @@ osmedeus cloud config set limits.max_instances 10
 
 ### Quick Domain Recon
 
-```bash theme={null}
+```bash
 osmedeus cloud run -f fast -t example.com --auto-destroy
 ```
 
@@ -158,7 +150,7 @@ osmedeus cloud run -f fast -t example.com --auto-destroy
 
 ### Large-Scale Subdomain Enumeration
 
-```bash theme={null}
+```bash
 # targets.txt：每行一个域名
 osmedeus cloud run -f general -T targets.txt --instances 5 --sync-back --auto-destroy
 ```
@@ -167,7 +159,7 @@ osmedeus cloud run -f general -T targets.txt --instances 5 --sync-back --auto-de
 
 ### Custom Nmap Scan
 
-```bash theme={null}
+```bash
 osmedeus cloud run \
   --custom-cmd "nmap -sV -sC {{Target}} -oA /tmp/osm-custom/nmap" \
   --sync-path "/tmp/osm-custom/" \
@@ -176,7 +168,7 @@ osmedeus cloud run \
 
 ### Distributed Nuclei Scanning
 
-```bash theme={null}
+```bash
 osmedeus cloud run \
   --custom-cmd "cat {{Target}} | nuclei -o /tmp/osm-custom/results.txt" \
   --sync-path "/tmp/osm-custom/results.txt" \
@@ -188,7 +180,7 @@ osmedeus cloud run \
 
 ### Spot Instance Pipeline
 
-```bash theme={null}
+```bash
 # 配置竞价实例
 osmedeus cloud config set providers.aws.use_spot true
 osmedeus cloud config set providers.aws.instance_type t3.large
@@ -206,7 +198,7 @@ osmedeus cloud run \
 
 ### Persistent Recon Campaign
 
-```bash theme={null}
+```bash
 # 一次性创建实例（节省后续运行的设置时间）
 osmedeus cloud create --provider aws -n 3
 
@@ -222,7 +214,7 @@ osmedeus cloud destroy all --force
 
 ### Multi-Region Scanning
 
-```bash theme={null}
+```bash
 # 从美国区域扫描美国目标
 osmedeus cloud config set providers.aws.region us-east-1
 osmedeus cloud run -f fast -t us-company.com --auto-destroy
@@ -240,7 +232,7 @@ osmedeus cloud run -f fast -t apac-company.com --auto-destroy
 
 ### Instances Not Starting
 
-```bash theme={null}
+```bash
 # 使用调试输出检查
 osmedeus cloud run -f fast -t example.com --debug
 
@@ -252,7 +244,7 @@ osmedeus cloud run -f fast -t example.com --debug
 
 ### SSH Connection Timeout
 
-```bash theme={null}
+```bash
 # 验证安全组允许 SSH（端口 22）
 # 使用详细设置检查
 osmedeus cloud run -f fast -t example.com --verbose-setup
@@ -268,7 +260,7 @@ osmedeus cloud run -f fast -t example.com --verbose-setup
 
 ### Cleaning Up
 
-```bash theme={null}
+```bash
 # 列出所有基础设施
 osmedeus cloud list
 

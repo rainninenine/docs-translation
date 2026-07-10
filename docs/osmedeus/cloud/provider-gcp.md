@@ -1,7 +1,3 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索前，请使用此文件发现所有可用页面。
-
 # GCP Provider Guide
 
 > 在 Google Cloud Platform Compute Engine 实例上运行 osmedeus cloud 的分步指南
@@ -47,7 +43,7 @@ compute.images.useReadOnly
 
 或者通过 `gcloud` CLI：
 
-```bash theme={null}
+```bash
 # 创建服务账号
 gcloud iam service-accounts create osmedeus-cloud \
   --display-name="Osmedeus Cloud Scanner"
@@ -64,7 +60,7 @@ gcloud iam service-accounts keys create ~/.gcp/osmedeus-sa.json \
 
 你也可以将凭证文件路径导出为环境变量：
 
-```bash theme={null}
+```bash
 export GCP_PROJECT_ID=your-project-id
 export GCP_CREDENTIALS_FILE=~/.gcp/osmedeus-sa.json
 ```
@@ -73,7 +69,7 @@ export GCP_CREDENTIALS_FILE=~/.gcp/osmedeus-sa.json
 
 ### Minimal Setup
 
-```bash theme={null}
+```bash
 # 启用云功能
 osmedeus config set cloud.enabled true
 
@@ -110,7 +106,7 @@ osmedeus cloud config set setup.commands.add "osmedeus install base --preset"
 | n2-standard-4 | 4    | 16 GB  | \$0.1942          | \~\$0.039                      | 并行管道              |
 | c2-standard-4 | 4    | 16 GB  | \$0.2088          | \~\$0.042                      | CPU 密集型扫描             |
 
-```bash theme={null}
+```bash
 # 设置机器类型
 osmedeus cloud config set providers.gcp.machine_type n1-standard-2
 ```
@@ -119,7 +115,7 @@ osmedeus cloud config set providers.gcp.machine_type n1-standard-2
 
 抢占式虚拟机成本比按需实例低 80%。它们最长运行 24 小时，可能被回收，但非常适合安全扫描工作负载。
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.gcp.use_preemptible true
 ```
 
@@ -139,7 +135,7 @@ osmedeus cloud config set providers.gcp.use_preemptible true
 | Mumbai         | 亚洲      | `asia-south1`          | `asia-south1-a`          |
 | Sydney         | 澳大利亚 | `australia-southeast1` | `australia-southeast1-a` |
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.gcp.region us-central1
 osmedeus cloud config set providers.gcp.zone us-central1-a
 ```
@@ -150,7 +146,7 @@ osmedeus cloud config set providers.gcp.zone us-central1-a
 
 使用预装工具的自定义镜像系列可加快启动速度：
 
-```bash theme={null}
+```bash
 # 默认使用 ubuntu-os-cloud 项目中的 ubuntu-2204-lts
 # 如果你有自己的自定义镜像系列，请使用它
 osmedeus cloud config set providers.gcp.image_family my-osmedeus-image
@@ -158,7 +154,7 @@ osmedeus cloud config set providers.gcp.image_family my-osmedeus-image
 
 ### Cost Limits
 
-```bash theme={null}
+```bash
 osmedeus cloud config set limits.max_hourly_spend 1.00
 osmedeus cloud config set limits.max_total_spend 10.00
 osmedeus cloud config set limits.max_instances 10
@@ -168,7 +164,7 @@ osmedeus cloud config set limits.max_instances 10
 
 ### Quick Domain Recon
 
-```bash theme={null}
+```bash
 osmedeus cloud run -f fast -t example.com --auto-destroy
 ```
 
@@ -176,7 +172,7 @@ osmedeus cloud run -f fast -t example.com --auto-destroy
 
 ### Large-Scale Subdomain Enumeration
 
-```bash theme={null}
+```bash
 # targets.txt：每行一个域名
 osmedeus cloud run -f general -T targets.txt --instances 5 --sync-back --auto-destroy
 ```
@@ -185,7 +181,7 @@ osmedeus cloud run -f general -T targets.txt --instances 5 --sync-back --auto-de
 
 ### Custom Nmap Scan
 
-```bash theme={null}
+```bash
 osmedeus cloud run \
   --custom-cmd "nmap -sV -sC {{Target}} -oA /tmp/osm-custom/nmap" \
   --sync-path "/tmp/osm-custom/" \
@@ -194,7 +190,7 @@ osmedeus cloud run \
 
 ### Distributed Nuclei Scanning
 
-```bash theme={null}
+```bash
 osmedeus cloud run \
   --custom-cmd "cat {{Target}} | nuclei -o /tmp/osm-custom/results.txt" \
   --sync-path "/tmp/osm-custom/results.txt" \
@@ -206,7 +202,7 @@ osmedeus cloud run \
 
 ### Preemptible Instance Pipeline
 
-```bash theme={null}
+```bash
 # 配置抢占式
 osmedeus cloud config set providers.gcp.use_preemptible true
 osmedeus cloud config set providers.gcp.machine_type n1-standard-2
@@ -224,7 +220,7 @@ osmedeus cloud run \
 
 ### Persistent Recon Campaign
 
-```bash theme={null}
+```bash
 # 一次性创建实例（后续运行节省设置时间）
 osmedeus cloud create --provider gcp -n 3
 
@@ -240,7 +236,7 @@ osmedeus cloud destroy all --force
 
 ### Multi-Region Scanning
 
-```bash theme={null}
+```bash
 # 从爱荷华州扫描美国目标
 osmedeus cloud config set providers.gcp.region us-central1
 osmedeus cloud config set providers.gcp.zone us-central1-a
@@ -258,7 +254,7 @@ osmedeus cloud run -f fast -t apac-company.com --auto-destroy
 
 服务账号缺少所需权限。分配 **Compute Admin** 角色：
 
-```bash theme={null}
+```bash
 gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
   --member="serviceAccount:YOUR_SA@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/compute.admin"
@@ -268,7 +264,7 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
 
 确保 JSON 密钥文件路径正确且文件存在：
 
-```bash theme={null}
+```bash
 # 检查文件是否存在
 ls -la ~/.gcp/osmedeus-sa.json
 
@@ -279,7 +275,7 @@ osmedeus cloud config set providers.gcp.credentials_file ${GCP_CREDENTIALS_FILE}
 
 ### Instances Not Starting
 
-```bash theme={null}
+```bash
 # 使用调试输出检查
 osmedeus cloud run -f fast -t example.com --debug
 
@@ -294,13 +290,13 @@ osmedeus cloud run -f fast -t example.com --debug
 
 为项目启用 Compute Engine API：
 
-```bash theme={null}
+```bash
 gcloud services enable compute.googleapis.com --project=YOUR_PROJECT_ID
 ```
 
 ### SSH Connection Timeout
 
-```bash theme={null}
+```bash
 # 验证防火墙规则允许 SSH（端口 22）
 gcloud compute firewall-rules list --filter="name~osmedeus"
 
@@ -318,7 +314,7 @@ osmedeus cloud run -f fast -t example.com --verbose-setup
 
 ### Cleaning Up
 
-```bash theme={null}
+```bash
 # 列出所有基础设施
 osmedeus cloud list
 

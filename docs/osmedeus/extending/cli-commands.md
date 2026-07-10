@@ -12,7 +12,7 @@ CLI 命令使用 Cobra 实现，定义在 `pkg/cli/` 目录下。每个命令文
 
 ## 命令结构
 
-```go theme={null}
+```go
 // pkg/cli/mycommand.go
 
 package cli
@@ -70,7 +70,7 @@ func runMyCommand(args []string) error {
 
 创建 `pkg/cli/mycommand.go`：
 
-```go theme={null}
+```go
 package cli
 
 import (
@@ -175,7 +175,7 @@ func runList() error {
 
 `internal/terminal` 包提供了输出格式化功能：
 
-```go theme={null}
+```go
 import "github.com/osmedeus/osmedeus-ng/internal/terminal"
 
 // 打印消息
@@ -208,7 +208,7 @@ spinner.Stop()
 
 ### 3. 访问配置
 
-```go theme={null}
+```go
 import "github.com/osmedeus/osmedeus-ng/internal/config"
 
 func runMyCommand() error {
@@ -232,7 +232,7 @@ func runMyCommand() error {
 
 ### 4. 处理错误
 
-```go theme={null}
+```go
 func runMyCommand() error {
     // 返回错误 - Cobra 负责显示
     if targetFlag == "" {
@@ -250,7 +250,7 @@ func runMyCommand() error {
 
 ### 5. 添加命令帮助
 
-```go theme={null}
+```go
 var myCmd = &cobra.Command{
     Use:   "mycommand <action>",
     Short: "简短的一行描述",
@@ -275,7 +275,7 @@ var myCmd = &cobra.Command{
 
 ## 示例：导出命令
 
-```go theme={null}
+```go
 // pkg/cli/export.go
 
 package cli
@@ -368,7 +368,7 @@ func runExportAssets() error {
 
 ## 标志类型
 
-```go theme={null}
+```go
 // 字符串标志
 cmd.Flags().StringVarP(&myString, "string", "s", "default", "描述")
 

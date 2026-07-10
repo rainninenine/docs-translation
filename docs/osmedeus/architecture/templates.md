@@ -16,7 +16,7 @@
 
 标准模板变量使用 `{{variable}}` 语法：
 
-```yaml theme={null}
+```yaml
 command: "nuclei -l {{Output}}/urls.txt -o {{Output}}/nuclei.json"
 ```
 
@@ -24,7 +24,7 @@ command: "nuclei -l {{Output}}/urls.txt -o {{Output}}/nuclei.json"
 
 Foreach 循环使用 `[[variable]]` 语法以避免冲突：
 
-```yaml theme={null}
+```yaml
 step:
   type: bash
   command: "httpx -u [[subdomain]] >> {{Output}}/httpx.txt"
@@ -34,7 +34,7 @@ step:
 
 生成器函数提供动态值：
 
-```yaml theme={null}
+```yaml
 exports:
   random_id: "$rand(16)"
   unique_id: "$uuid()"
@@ -51,7 +51,7 @@ exports:
 
 ## TemplateEngine 接口
 
-```go theme={null}
+```go
 type TemplateEngine interface {
     // Render 使用给定上下文渲染模板字符串
     Render(template string, ctx map[string]any) (string, error)
@@ -80,7 +80,7 @@ type TemplateEngine interface {
 
 对于高吞吐量场景，`BatchRenderer` 接口扩展了 `TemplateEngine`：
 
-```go theme={null}
+```go
 type BatchRenderer interface {
     TemplateEngine
 
@@ -123,7 +123,7 @@ type RenderRequest struct {
 
 ### 配置
 
-```go theme={null}
+```go
 type ShardedEngineConfig struct {
     ShardCount     int  // 分片数量（2 的幂）
     ShardCacheSize int  // 每个分片的 LRU 缓存大小
@@ -149,7 +149,7 @@ const DefaultShardCacheSize = 64
 
 ### 渲染流程
 
-```go theme={null}
+```go
 func (e *ShardedEngine) Render(template string, ctx map[string]any) (string, error) {
     // 快速路径：无模板变量
     if !strings.Contains(template, "{{") {
@@ -189,7 +189,7 @@ func (e *ShardedEngine) Render(template string, ctx map[string]any) (string, err
 
 `PrecompiledRegistry` 存储工作流的预编译模板：
 
-```go theme={null}
+```go
 type PrecompiledRegistry struct {
     mu        sync.RWMutex
     workflows map[string]*WorkflowTemplates
@@ -203,7 +203,7 @@ type WorkflowTemplates struct {
 
 ### Precompiler 接口
 
-```go theme={null}
+```go
 type Precompiler interface {
     // PrecompileWorkflow 扫描并预编译所有模板
     PrecompileWorkflow(workflowName string, templates map[string]string) error
@@ -218,7 +218,7 @@ type Precompiler interface {
 
 ### 使用
 
-```go theme={null}
+```go
 // 在工作流加载时
 registry := NewPrecompiledRegistry()
 templates := map[string]string{
@@ -237,7 +237,7 @@ if tpl := registry.GetPrecompiled("my-workflow", "scan:command"); tpl != nil {
 
 上下文映射被池化以减少内存分配：
 
-```go theme={null}
+```go
 var contextPool = sync.Pool{
     New: func() interface{} {
         return make(map[string]any, 32)
@@ -258,7 +258,7 @@ func PutContext(ctx map[string]any) {
 
 布尔值被规范化以兼容模板：
 
-```go theme={null}
+```go
 func NormalizeBoolsToPooled(ctx map[string]any) map[string]any {
     pooled := GetContext()
     for k, v := range ctx {
@@ -285,7 +285,7 @@ func NormalizeBoolsToPooled(ctx map[string]any) map[string]any {
 
 生成器函数产生动态值：
 
-```go theme={null}
+```go
 type GeneratorFunc func(args ...string) (string, error)
 
 // 内置生成器
@@ -308,7 +308,7 @@ var builtinGenerators = map[string]GeneratorFunc{
 
 ### 使用
 
-```yaml theme={null}
+```yaml
 exports:
   random_id: "$rand(16)"
   unique_id: "$uuid()"
@@ -319,7 +319,7 @@ exports:
 
 对于高吞吐量场景，批量渲染减少锁获取次数：
 
-```go theme={null}
+```go
 func (e *ShardedEngine) RenderBatch(requests []RenderRequest, ctx map[string]any) (map[string]string, error) {
     results := make(map[string]string, len(requests))
 
@@ -354,7 +354,7 @@ func (e *ShardedEngine) RenderBatch(requests []RenderRequest, ctx map[string]any
 
 Foreach 循环使用 `[[variable]]` 以避免与预渲染的 `{{variables}}` 冲突：
 
-```go theme={null}
+```go
 func (e *ShardedEngine) RenderSecondary(template string, ctx map[string]any) (string, error) {
     if !strings.Contains(template, "[[") {
         return template, nil

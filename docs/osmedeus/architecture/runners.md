@@ -1,7 +1,3 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索前，请使用此文件发现所有可用页面。
-
 # Runners
 
 > 命令和步骤的执行环境
@@ -22,7 +18,7 @@ Runner 在不同的环境中执行命令。
 
 ### 配置
 
-```yaml theme={null}
+```yaml
 kind: module
 name: local-scan
 runner: host        # 默认值，可省略
@@ -46,7 +42,7 @@ steps:
 
 ### 模块级配置
 
-```yaml theme={null}
+```yaml
 kind: module
 name: docker-scan
 runner: docker
@@ -79,7 +75,7 @@ steps:
 
 **临时（默认）**：每个步骤运行 `docker run --rm`
 
-```yaml theme={null}
+```yaml
 runner_config:
   image: alpine:latest
   persistent: false    # 每个步骤新建容器
@@ -87,7 +83,7 @@ runner_config:
 
 **持久化**：容器保持运行，步骤使用 `docker exec`
 
-```yaml theme={null}
+```yaml
 runner_config:
   image: alpine:latest
   persistent: true     # 复用容器
@@ -97,7 +93,7 @@ runner_config:
 
 在不设置模块级 runner 的情况下，为特定步骤使用 Docker：
 
-```yaml theme={null}
+```yaml
 kind: module
 name: hybrid
 runner: host
@@ -123,7 +119,7 @@ steps:
 
 ### 模块级配置
 
-```yaml theme={null}
+```yaml
 kind: module
 name: remote-scan
 runner: ssh
@@ -156,7 +152,7 @@ steps:
 
 为特定步骤使用 SSH：
 
-```yaml theme={null}
+```yaml
 kind: module
 name: hybrid
 runner: host
@@ -181,7 +177,7 @@ steps:
 
 将文件从远程复制到本地：
 
-```yaml theme={null}
+```yaml
 - name: remote-scan
   type: remote-bash
   step_runner: ssh
@@ -198,7 +194,7 @@ steps:
 
 所有 Runner 实现以下接口：
 
-```go theme={null}
+```go
 type Runner interface {
     Execute(ctx context.Context, command string) (*CommandResult, error)
     Setup(ctx context.Context) error
@@ -238,20 +234,20 @@ type CommandResult struct {
 ### Docker
 
 1. **使用具体的镜像标签**
-   ```yaml theme={null}
+   ```yaml
    image: projectdiscovery/nuclei:v2.9.0  # 良好
    image: projectdiscovery/nuclei:latest  # 可预测性较差
    ```
 
 2. **仅挂载必要的卷**
-   ```yaml theme={null}
+   ```yaml
    volumes:
      - "{{Output}}:/output:rw"
      - "{{Data}}/templates:/templates:ro"
    ```
 
 3. **多步骤时使用持久化模式**
-   ```yaml theme={null}
+   ```yaml
    runner_config:
      persistent: true  # 多步骤工作流更快
    ```
@@ -259,20 +255,20 @@ type CommandResult struct {
 ### SSH
 
 1. **使用密钥认证**
-   ```yaml theme={null}
+   ```yaml
    key_file: ~/.ssh/scanner_key
    # 避免：password: secret
    ```
 
 2. **参数化主机详情**
-   ```yaml theme={null}
+   ```yaml
    runner_config:
      host: "{{ssh_host}}"
      user: "{{ssh_user}}"
    ```
 
 3. **检查远程工具可用性**
-   ```yaml theme={null}
+   ```yaml
    - name: check-tools
      type: bash
      command: which nmap nuclei httpx
@@ -286,7 +282,7 @@ type CommandResult struct {
    * 本地结果处理
 
 2. **将结果传回**
-   ```yaml theme={null}
+   ```yaml
    step_remote_file: /remote/output.txt
    host_output_file: "{{Output}}/output.txt"
    ```

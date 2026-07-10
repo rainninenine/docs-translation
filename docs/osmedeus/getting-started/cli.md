@@ -6,15 +6,13 @@
 
 > Osmedeus 的命令行接口
 
-<Frame caption="CLI 运行进度">
-  <img src="https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-progress.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=a0c448d97d10f955df1589deb2251cc6" alt="描述性替代文本" width="2704" height="1438" data-path="images/cli/cli-run-progress.png" />
-</Frame>
+![描述性替代文本](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-progress.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=a0c448d97d10f955df1589deb2251cc6)
 
 本文档描述了 Osmedeus 的命令行接口（CLI），它是运行工作流、模块以及其他实用工具的主要入口点。
 
 本文档提供了每个命令的使用示例和说明。以下是所有可用命令：
 
-```bash theme={null}
+```bash
 j3ssie ▶ osmedeus -h
 
 用法：
@@ -49,21 +47,15 @@ j3ssie ▶ osmedeus -h
 
 对一个或多个目标执行工作流
 
-<Frame caption="带有 LLM 步骤的 CLI 运行">
-  <img src="https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-with-llm-step.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=966352fbdd154b60dcab8c203f54e9b7" alt="描述性替代文本" width="4336" height="2650" data-path="images/cli/cli-run-with-llm-step.png" />
-</Frame>
+![描述性替代文本](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-with-llm-step.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=966352fbdd154b60dcab8c203f54e9b7)
 
 <Columns cols={2}>
-  <Frame caption="CLI 运行进度">
-    <img src="https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-run-with-verbose-output.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=a254d87b37a7ec88651d9bbf8436be22" alt="描述性替代文本" width="3824" height="2366" data-path="images/cli/cli-run-with-verbose-output.png" />
-  </Frame>
+  ![描述性替代文本](https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-run-with-verbose-output.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=a254d87b37a7ec88651d9bbf8436be22)
 
-  <Frame caption="CLI 运行进度">
-    <img src="https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-run-with-ci-friendly-output.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=c2d2b2023238bc659a30067eeffadfd0" alt="描述性替代文本" width="3824" height="2366" data-path="images/cli/cli-run-with-ci-friendly-output.png" />
-  </Frame>
+  ![描述性替代文本](https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-run-with-ci-friendly-output.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=c2d2b2023238bc659a30067eeffadfd0)
 </Columns>
 
-```bash theme={null}
+```bash
 
 ▷ 示例
   # 针对单个目标运行
@@ -189,15 +181,11 @@ j3ssie ▶ osmedeus -h
 
 执行和测试工作流中可用的实用函数
 
-<Frame caption="CLI Function Eval 查询数据库">
-  <img src="https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-func-eval-1.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=91970d6b7b8e529b79f9cc97727ef45a" alt="描述性替代文本" width="3238" height="1370" data-path="images/cli/cli-func-eval-1.png" />
-</Frame>
+![描述性替代文本](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-func-eval-1.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=91970d6b7b8e529b79f9cc97727ef45a)
 
-<Frame caption="CLI Function Eval 渲染 Markdown">
-  <img src="https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-func-eval-2.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=c94d0a37bffd99c3ee5cfbfadfd4e4b0" alt="描述性替代文本" width="4336" height="1656" data-path="images/cli/cli-func-eval-2.png" />
-</Frame>
+![描述性替代文本](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-func-eval-2.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=c94d0a37bffd99c3ee5cfbfadfd4e4b0)
 
-```bash theme={null}
+```bash
 ▶ 子命令
   • list       - 列出所有可用函数
   • eval (e)   - 评估脚本并渲染模板
@@ -262,7 +250,7 @@ j3ssie ▶ osmedeus -h
 
 从多种来源安装工作流、基础文件夹或二进制文件的一行命令。
 
-```bash theme={null}
+```bash
 ◆ 描述
   从多种来源安装工作流、基础文件夹或二进制文件。
 
@@ -316,15 +304,11 @@ j3ssie ▶ osmedeus -h
 
 查看和管理数据库，包括清理和模式操作。
 
-<Frame caption="CLI 数据库列表">
-  <img src="https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-db-list.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=7ca98e6543e673732ee4d330014f6644" alt="cli-db-list" width="4336" height="1824" data-path="images/cli/cli-db-list.png" />
-</Frame>
+![cli-db-list](https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-db-list.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=7ca98e6543e673732ee4d330014f6644)
 
-<Frame caption="CLI 数据库表视图">
-  <img src="https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-db-table-view.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=db001562f81a2723ed7a72a4950c0051" alt="cli-db-view" width="4336" height="2674" data-path="images/cli/cli-db-table-view.png" />
-</Frame>
+![cli-db-view](https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-db-table-view.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=db001562f81a2723ed7a72a4950c0051)
 
-```bash theme={null}
+```bash
 ◆ 描述
   列出所有数据库表及其行数，或列出特定表中的记录（支持分页）。
 
@@ -403,7 +387,7 @@ j3ssie ▶ osmedeus -h
 
 将任务加入队列以便稍后处理，并以可控的并发数执行。任务可以通过 `osmedeus run` 的 `--queue` 标志加入队列，或直接通过 `osmedeus worker queue new` 加入。
 
-```bash theme={null}
+```bash
 ▶ 完整工作流
   # 步骤 1：将任务加入队列
   osmedeus run --queue -m recon -t example.com
@@ -444,7 +428,7 @@ j3ssie ▶ osmedeus -h
 
 启动 Osmedeus Web 服务器，提供用于管理运行、工作流和设置的 REST API 端点。
 
-```bash theme={null}
+```bash
 ▷ 示例
   # 使用默认设置启动服务器
   osmedeus serve
@@ -469,7 +453,7 @@ j3ssie ▶ osmedeus -h
 
 用于管理分布式扫描模式中工作节点的命令。工作节点连接到 Redis 并从主节点处理任务。
 
-```bash theme={null}
+```bash
 ▶ 子命令
   • join    - 加入分布式工作节点池
   • status  - 显示工作节点池状态（别名：ls）

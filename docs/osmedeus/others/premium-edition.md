@@ -1,19 +1,15 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索前，请使用此文件发现所有可用页面。
-
 # Premium Edition
 
 > Osmedeus Premium Edition 中提供的独家功能和优势
 
-<Callout icon="hands-holding-diamond" color="#8EC07C" iconType="regular">通过任何可用方式进行捐赠 [**赞助**](/sponsor) 以获取 Premium Edition 安装链接</Callout>
+!!! tip "通过任何可用方式进行捐赠 [**赞助**](/sponsor) 以获取 Premium Edition 安装链接"
 
 通过 **Premium Edition** 释放 Osmedeus 的全部潜力。获取专为严肃安全专业人员设计的独家工作流、高级报告和高级工具集成。
 
 <Callout icon="desktop-arrow-down" iconType="regular">
   **安装** - Premium 用户将在 Discord 或 Patreon 中收到自定义的一行安装命令。在任何支持的系统上运行即可开始：
 
-  ```bash theme={null}
+  ```bash
   curl -fsSL https://<your-premium-domain>/premium-osmedeus-install.sh | bash
   ```
 

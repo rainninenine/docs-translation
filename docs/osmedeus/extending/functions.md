@@ -14,7 +14,7 @@
 
 函数在 `internal/functions/goja_runtime.go` 中注册：
 
-```go theme={null}
+```go
 func (r *GojaRuntime) registerFunctions() {
     // 文件函数
     r.vm.Set("fileExists", r.fileExists)
@@ -36,7 +36,7 @@ func (r *GojaRuntime) registerFunctions() {
 
 将函数添加到 `internal/functions/` 中的适当文件：
 
-```go theme={null}
+```go
 // internal/functions/util_functions.go
 
 func (r *GojaRuntime) myNewFunction(call goja.FunctionCall) goja.Value {
@@ -71,7 +71,7 @@ func (r *GojaRuntime) myNewFunction(call goja.FunctionCall) goja.Value {
 
 更新 `internal/functions/goja_runtime.go`：
 
-```go theme={null}
+```go
 func (r *GojaRuntime) registerFunctions() {
     // ... 现有注册项 ...
 
@@ -84,7 +84,7 @@ func (r *GojaRuntime) registerFunctions() {
 
 更新 `internal/functions/registry.go` 中的 `ListFunctions()`：
 
-```go theme={null}
+```go
 func (r *Registry) ListFunctions() []FunctionInfo {
     return []FunctionInfo{
         // ... 现有函数 ...
@@ -102,7 +102,7 @@ func (r *Registry) ListFunctions() []FunctionInfo {
 
 添加到 `internal/functions/registry_test.go`：
 
-```go theme={null}
+```go
 func TestMyNewFunction(t *testing.T) {
     registry := functions.NewRegistry()
 
@@ -126,7 +126,7 @@ func TestMyNewFunction_DefaultArg(t *testing.T) {
 
 ### 字符串
 
-```go theme={null}
+```go
 func (r *GojaRuntime) myStringFunc(call goja.FunctionCall) goja.Value {
     result := "hello world"
     value, _ := r.vm.ToValue(result)
@@ -136,7 +136,7 @@ func (r *GojaRuntime) myStringFunc(call goja.FunctionCall) goja.Value {
 
 ### 布尔值
 
-```go theme={null}
+```go
 func (r *GojaRuntime) myBoolFunc(call goja.FunctionCall) goja.Value {
     result := true
     value, _ := r.vm.ToValue(result)
@@ -146,7 +146,7 @@ func (r *GojaRuntime) myBoolFunc(call goja.FunctionCall) goja.Value {
 
 ### 数字
 
-```go theme={null}
+```go
 func (r *GojaRuntime) myNumberFunc(call goja.FunctionCall) goja.Value {
     result := 42
     value, _ := r.vm.ToValue(result)
@@ -156,7 +156,7 @@ func (r *GojaRuntime) myNumberFunc(call goja.FunctionCall) goja.Value {
 
 ### 数组
 
-```go theme={null}
+```go
 func (r *GojaRuntime) myArrayFunc(call goja.FunctionCall) goja.Value {
     result := []string{"a", "b", "c"}
     value, _ := r.vm.ToValue(result)
@@ -166,7 +166,7 @@ func (r *GojaRuntime) myArrayFunc(call goja.FunctionCall) goja.Value {
 
 ### 对象/映射
 
-```go theme={null}
+```go
 func (r *GojaRuntime) myObjectFunc(call goja.FunctionCall) goja.Value {
     result := map[string]interface{}{
         "key1": "value1",
@@ -181,7 +181,7 @@ func (r *GojaRuntime) myObjectFunc(call goja.FunctionCall) goja.Value {
 
 函数可以访问执行上下文：
 
-```go theme={null}
+```go
 func (r *GojaRuntime) myContextFunc(call goja.FunctionCall) goja.Value {
     // 获取上下文变量
     ctxValue, err := r.vm.Get("_context")
@@ -204,7 +204,7 @@ func (r *GojaRuntime) myContextFunc(call goja.FunctionCall) goja.Value {
 
 ## 示例：哈希函数
 
-```go theme={null}
+```go
 // internal/functions/util_functions.go
 
 import (
@@ -240,13 +240,13 @@ func (r *GojaRuntime) hash(call goja.FunctionCall) goja.Value {
 
 注册：
 
-```go theme={null}
+```go
 r.vm.Set("hash", r.hash)
 ```
 
 在工作流中使用：
 
-```yaml theme={null}
+```yaml
 - name: compute-hash
   type: function
   function: hash("{{target}}", "sha256")
@@ -256,7 +256,7 @@ r.vm.Set("hash", r.hash)
 
 ## 示例：HTTP 获取函数
 
-```go theme={null}
+```go
 // internal/functions/http_functions.go
 
 func (r *GojaRuntime) httpFetch(call goja.FunctionCall) goja.Value {
@@ -315,7 +315,7 @@ func (r *GojaRuntime) httpFetch(call goja.FunctionCall) goja.Value {
 
 使用方式：
 
-```yaml theme={null}
+```yaml
 - name: fetch-api
   type: function
   function: httpFetch("https://api.example.com/data", "GET", {"Authorization": "Bearer token"})

@@ -4,9 +4,7 @@
 
 # 分布式执行
 
-<Frame>
-  <img src="https://mintcdn.com/osmedeus/0qu3QQdMjynOzfxl/images/cli/cli-distributed-run.png?fit=max&auto=format&n=0qu3QQdMjynOzfxl&q=85&s=4bbd69e298eea9fa4c1fd95461f30772" alt="分布式执行" width="3824" height="2366" data-path="images/cli/cli-distributed-run.png" />
-</Frame>
+![分布式执行](https://mintcdn.com/osmedeus/0qu3QQdMjynOzfxl/images/cli/cli-distributed-run.png?fit=max&auto=format&n=0qu3QQdMjynOzfxl&q=85&s=4bbd69e298eea9fa4c1fd95461f30772)
 
 使用 Redis 协调，跨多台机器扩展扫描能力。
 
@@ -55,7 +53,7 @@
 
 ### 0. 启动 Redis（如果没有）
 
-```bash theme={null}
+```bash
 # Docker
 docker run -d -p 6379:6379 redis:7-alpine
 
@@ -69,7 +67,7 @@ docker run -d -p 6379:6379 \
 
 ### 1. 启动主节点
 
-```bash theme={null}
+```bash
 ## 配置 Redis 连接
 osmedeus config set redis.host 127.0.0.1
 osmedeus config set redis.port 6379
@@ -79,7 +77,7 @@ osmedeus server --master
 
 或使用自定义 Redis：
 
-```bash theme={null}
+```bash
 osmedeus server --master --redis-url redis://redis-host:6379
 ```
 
@@ -87,25 +85,25 @@ osmedeus server --master --redis-url redis://redis-host:6379
 
 ### 2. 启动工作节点
 
-```bash theme={null}
+```bash
 osmedeus worker join --redis-url redis://host.docker.internal:6379
 ```
 
 启用公网 IP 检测（用于默认别名和 SSH 路由）：
 
-```bash theme={null}
+```bash
 osmedeus worker join --redis-url redis://host.docker.internal:6379 --get-public-ip
 ```
 
 使用自定义别名：
 
-```bash theme={null}
+```bash
 osmedeus worker join --redis-url redis://host.docker.internal:6379 --alias my-worker
 ```
 
 或者如果主节点在本地：
 
-```bash theme={null}
+```bash
 ## 配置 Redis 连接
 osmedeus config set redis.host 127.0.0.1
 osmedeus config set redis.port 6379
@@ -115,7 +113,7 @@ osmedeus worker join
 
 ### 3. 提交任务与列出工作节点
 
-```bash theme={null}
+```bash
 # 通过 CLI
 osmedeus run --distributed-run -f general -t hackerone.com
 
@@ -132,7 +130,7 @@ osmedeus worker ls
 
 ### 4. 在主节点/工作节点上运行实用脚本（可选）
 
-```bash theme={null}
+```bash
 # 在主节点上运行，以在所有工作节点上执行命令
 osmedeus eval "run_on_worker('all', 'bash', 'touch /tmp/on-worker')" --redis-url redis://host.docker.internal:6379
 
@@ -176,7 +174,7 @@ osmedeus worker --redis-url redis://host.docker.internal:6379 eval "run_on_maste
 
 ### 工作节点状态
 
-```bash theme={null}
+```bash
 # CLI
 osmedeus worker status
 
@@ -187,7 +185,7 @@ curl http://master:8002/osm/api/workers \
 
 ### 任务状态
 
-```bash theme={null}
+```bash
 # 列出任务
 curl http://master:8002/osm/api/tasks \
   -H "Authorization: Bearer $TOKEN"
@@ -201,7 +199,7 @@ curl http://master:8002/osm/api/tasks/task-123 \
 
 使用 `client` 命令从任何机器监控分布式运行：
 
-```bash theme={null}
+```bash
 # 设置连接详情
 export OSM_REMOTE_URL=http://master:8080
 export OSM_REMOTE_AUTH_KEY=your-api-key
@@ -218,7 +216,7 @@ osmedeus client fetch -t vulnerabilities --severity critical
 
 ## Docker Compose 设置
 
-```yaml theme={null}
+```yaml
 services:
   redis:
     image: redis:7-alpine
@@ -282,7 +280,7 @@ networks:
 
 运行：
 
-```bash theme={null}
+```bash
 # 分布式端到端堆栈：Redis + 主节点 + 工作节点
 # 用法：
 

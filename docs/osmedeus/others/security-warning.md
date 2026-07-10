@@ -1,7 +1,3 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索前，请使用此文件发现所有可用页面。
-
 # Security Warning
 
 > 重要安全通知与免责声明
@@ -39,7 +35,7 @@ Osmedeus Web UI 和 REST API 提供以下接口：
 
 * 始终为 API 身份验证使用强且唯一的凭据。使用以下命令设置安全的随机凭据：
 
-```bash theme={null}
+```bash
 osmedeus config set server.password "$(openssl rand -hex 12)"
 osmedeus config set server.jwt.secret_signing_key "$(openssl rand -hex 32)"
 osmedeus config set server.auth_api_key "$(openssl rand -hex 24)"

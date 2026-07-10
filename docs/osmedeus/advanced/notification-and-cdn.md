@@ -10,7 +10,7 @@
 
 ## 通知配置
 
-```bash theme={null}
+```bash
 ## Telegram 设置
 osmedeus config set notification.enabled true
 osmedeus config set notification.telegram.enabled true
@@ -21,9 +21,7 @@ osmedeus config set notification.telegram.chat_id "-1001234567890"
 
 通过使用工具函数 `osmedeus eval 'notify_telegram("**hola** osmedeus from cli")'` 发送示例消息来验证您的设置。
 
-<Frame caption="通知函数">
-  <img src="https://mintcdn.com/osmedeus/8zvZUJvRBGDXZt0n/images/noti/noti-funcs.png?fit=max&auto=format&n=8zvZUJvRBGDXZt0n&q=85&s=5c7ea0a243ff111ce3a014986c2c870e" alt="通知函数" width="4336" height="1450" data-path="images/noti/noti-funcs.png" />
-</Frame>
+![通知函数](https://mintcdn.com/osmedeus/8zvZUJvRBGDXZt0n/images/noti/noti-funcs.png?fit=max&auto=format&n=8zvZUJvRBGDXZt0n&q=85&s=5c7ea0a243ff111ce3a014986c2c870e)
 
 使用 `osmedeus func ls noti` 列出所有可用的通知函数。
 
@@ -31,7 +29,7 @@ osmedeus config set notification.telegram.chat_id "-1001234567890"
 
 以下是获取Telegram令牌和频道ID的快速指南：
 
-```bash theme={null}
+```bash
 搜索 @BotFather 并创建您的机器人，然后获取令牌
 
 # 获取频道ID
@@ -45,11 +43,9 @@ curl -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" -d chat_i
 
 使用 `osmedeus func ls cdn` 列出所有可用的CDN函数。以下是我常用的一些函数：
 
-<Frame caption="CDN函数">
-  <img src="https://mintcdn.com/osmedeus/8zvZUJvRBGDXZt0n/images/noti/cdn-funcs.png?fit=max&auto=format&n=8zvZUJvRBGDXZt0n&q=85&s=a3bbbe7a0fac73fa97bca48205e12f0f" alt="CDN函数" width="4336" height="1774" data-path="images/noti/cdn-funcs.png" />
-</Frame>
+![CDN函数](https://mintcdn.com/osmedeus/8zvZUJvRBGDXZt0n/images/noti/cdn-funcs.png?fit=max&auto=format&n=8zvZUJvRBGDXZt0n&q=85&s=a3bbbe7a0fac73fa97bca48205e12f0f)
 
-```bash theme={null}
+```bash
 
 osmedeus eval 'cdn_ls_tree()'
 
@@ -65,7 +61,7 @@ osmedeus eval 'cdn_ls_tree("targets/")'
 
 ### Cloudflare R2
 
-```bash theme={null}
+```bash
 ## R2的CDN设置
 osmedeus config set storage.provider 'r2'
 osmedeus config set storage.access_key_id '<r2-key-id>'
@@ -81,7 +77,7 @@ osmedeus config set storage.enabled 'true'
 
 ### Google Cloud Storage
 
-```bash theme={null}
+```bash
 ## GCS的CDN设置
 osmedeus config set storage.provider 'gcs'
 osmedeus config set storage.access_key_id '<gcs-key-id>'
@@ -98,8 +94,10 @@ osmedeus config set storage.enabled 'true'
 
 ## 完整通知与CDN配置
 
-<Expandable title="完整通知与CDN配置">
-  ```yaml theme={null}
+<details>
+<summary>完整通知与CDN配置</summary>
+
+  ```yaml
   # =============================================================================
   # 通知配置
   # =============================================================================
@@ -216,4 +214,6 @@ osmedeus config set storage.enabled 'true'
 
 
   ```
-</Expandable>
+
+
+</details>

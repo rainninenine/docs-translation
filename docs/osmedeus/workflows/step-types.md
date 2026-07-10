@@ -1,7 +1,3 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索前，请使用此文件发现所有可用页面。
-
 # 步骤类型
 
 > 工作流执行可用的步骤类型
@@ -27,7 +23,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 基本命令
 
-```yaml theme={null}
+```yaml
 - name: run-subfinder
   type: bash
   command: subfinder -d {{target}} -o {{Output}}/subs.txt
@@ -35,7 +31,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 多个命令（顺序执行）
 
-```yaml theme={null}
+```yaml
 - name: setup
   type: bash
   commands:
@@ -46,7 +42,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 并行命令
 
-```yaml theme={null}
+```yaml
 - name: run-tools
   type: bash
   parallel_commands:
@@ -57,7 +53,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 结构化参数
 
-```yaml theme={null}
+```yaml
 - name: nuclei-scan
   type: bash
   command: nuclei
@@ -81,7 +77,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 将输出保存到文件
 
-```yaml theme={null}
+```yaml
 - name: scan
   type: bash
   command: nmap -sV {{target}}
@@ -94,7 +90,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 单个函数
 
-```yaml theme={null}
+```yaml
 - name: log-start
   type: function
   function: log_info("Starting scan for {{target}}")
@@ -102,7 +98,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 多个函数
 
-```yaml theme={null}
+```yaml
 - name: check-files
   type: function
   functions:
@@ -113,7 +109,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 并行函数
 
-```yaml theme={null}
+```yaml
 - name: parallel-checks
   type: function
   parallel_functions:
@@ -124,7 +120,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 在条件中使用
 
-```yaml theme={null}
+```yaml
 - name: run-if-exists
   type: bash
   pre_condition: 'fileExists("{{Output}}/targets.txt")'
@@ -137,7 +133,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 基本循环
 
-```yaml theme={null}
+```yaml
 - name: probe-subdomains
   type: foreach
   input: "{{Output}}/subdomains.txt"
@@ -151,7 +147,7 @@ Osmedeus 支持 8 种步骤类型，以满足不同的执行需求。
 
 ### 嵌套变量
 
-```yaml theme={null}
+```yaml
 - name: scan-hosts
   type: foreach
   input: "{{Output}}/hosts.txt"
@@ -206,7 +202,7 @@ foreach 执行器使用工作池模式：
 
 在将每个输入行存储到循环变量之前进行转换：
 
-```yaml theme={null}
+```yaml
 - name: scan-cleaned-hosts
   type: foreach
   input: "{{Output}}/hosts.txt"
@@ -223,7 +219,7 @@ foreach 执行器使用工作池模式：
 
 使用 `[[variable]]`（双括号）表示循环变量，以避免与 `{{templates}}` 冲突：
 
-```yaml theme={null}
+```yaml
 step:
   name: scan
   type: bash
@@ -236,7 +232,7 @@ step:
 
 Foreach 步骤可以包含其他 foreach 步骤：
 
-```yaml theme={null}
+```yaml
 - name: scan-ports-per-host
   type: foreach
   input: "{{Output}}/hosts.txt"
@@ -258,7 +254,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 并发运行多个步骤。
 
-```yaml theme={null}
+```yaml
 - name: parallel-recon
   type: parallel-steps
   parallel_steps:
@@ -277,7 +273,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 嵌套步骤可以是任何类型：
 
-```yaml theme={null}
+```yaml
 - name: parallel-checks
   type: parallel-steps
   parallel_steps:
@@ -305,7 +301,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 ### Docker 执行
 
-```yaml theme={null}
+```yaml
 - name: docker-nuclei
   type: remote-bash
   step_runner: docker
@@ -320,7 +316,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 ### SSH 执行
 
-```yaml theme={null}
+```yaml
 - name: ssh-nmap
   type: remote-bash
   step_runner: ssh
@@ -360,7 +356,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 ### GET 请求
 
-```yaml theme={null}
+```yaml
 - name: fetch-api
   type: http
   url: "https://api.example.com/data/{{target}}"
@@ -374,7 +370,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 ### POST 请求
 
-```yaml theme={null}
+```yaml
 - name: submit-scan
   type: http
   url: "https://scanner.example.com/api/scan"
@@ -390,7 +386,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 ### PUT 请求
 
-```yaml theme={null}
+```yaml
 - name: update-config
   type: http
   url: "https://api.example.com/config/{{target}}"
@@ -403,7 +399,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 ### PATCH 请求
 
-```yaml theme={null}
+```yaml
 - name: patch-status
   type: http
   url: "https://api.example.com/scan/{{scan_id}}"
@@ -415,7 +411,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 ### DELETE 请求
 
-```yaml theme={null}
+```yaml
 - name: remove-entry
   type: http
   url: "https://api.example.com/entries/{{entry_id}}"
@@ -428,7 +424,7 @@ Foreach 步骤可以包含其他 foreach 步骤：
 
 HTTP 步骤执行后，变量以 `<step_name>_http_resp` 模式导出：
 
-```yaml theme={null}
+```yaml
 # 访问方式：{{step_name_http_resp.field}}
 # 可用字段：
 #   status_code      - HTTP 状态码（整数）
@@ -453,7 +449,7 @@ HTTP 步骤执行后，变量以 `<step_name>_http_resp` 模式导出：
 
 ### 聊天补全
 
-```yaml theme={null}
+```yaml
 - name: analyze-findings
   type: llm
   messages:
@@ -480,7 +476,7 @@ HTTP 步骤执行后，变量以 `<step_name>_http_resp` 模式导出：
 
 定义 LLM 可以调用的工具（兼容 OpenAI 的函数调用）：
 
-```yaml theme={null}
+```yaml
 - name: intelligent-scan
   type: llm
   messages:
@@ -514,7 +510,7 @@ HTTP 步骤执行后，变量以 `<step_name>_http_resp` 模式导出：
 
 为文本生成向量嵌入：
 
-```yaml theme={null}
+```yaml
 - name: generate-embeddings
   type: llm
   is_embedding: true
@@ -529,7 +525,7 @@ HTTP 步骤执行后，变量以 `<step_name>_http_resp` 模式导出：
 
 在消息中包含图像：
 
-```yaml theme={null}
+```yaml
 - name: analyze-screenshot
   type: llm
   messages:
@@ -546,7 +542,7 @@ HTTP 步骤执行后，变量以 `<step_name>_http_resp` 模式导出：
 
 强制结构化 JSON 响应：
 
-```yaml theme={null}
+```yaml
 - name: structured-analysis
   type: llm
   messages:
@@ -583,7 +579,7 @@ HTTP 步骤执行后，变量以 `<step_name>_http_resp` 模式导出：
 
 按步骤覆盖全局 LLM 设置：
 
-```yaml theme={null}
+```yaml
 - name: custom-llm
   type: llm
   llm_config:
@@ -604,7 +600,7 @@ HTTP 步骤执行后，变量以 `<step_name>_http_resp` 模式导出：
 
 LLM 步骤执行后：
 
-```yaml theme={null}
+```yaml
 # 访问方式：{{step_name_llm_resp.field}} 或 {{step_name_content}}
 # step_name_llm_resp 中的可用字段：
 #   id             - 响应 ID
@@ -634,7 +630,7 @@ LLM 步骤执行后：
 
 ### 基本用法
 
-```yaml theme={null}
+```yaml
 - name: analyze-target
   type: agent
   query: "Enumerate subdomains of {{Target}} and summarize findings."

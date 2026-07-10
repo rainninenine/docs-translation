@@ -10,9 +10,7 @@
 
 ## 概述
 
-<Frame caption="触发器事件示例">
-  <img src="https://mintcdn.com/osmedeus/umCo_bqCXCReKqLX/images/cli/cli-event-test.png?fit=max&auto=format&n=umCo_bqCXCReKqLX&q=85&s=265d7cb6e3ec6092eb1b0ac46f0e2c94" alt="触发器事件示例" width="3824" height="2366" data-path="images/cli/cli-event-test.png" />
-</Frame>
+![触发器事件示例](https://mintcdn.com/osmedeus/umCo_bqCXCReKqLX/images/cli/cli-event-test.png?fit=max&auto=format&n=umCo_bqCXCReKqLX&q=85&s=265d7cb6e3ec6092eb1b0ac46f0e2c94)
 
 事件驱动触发器使工作流能够响应事件自动执行：
 
@@ -27,7 +25,7 @@
 
 事件通过系统携带结构化数据：
 
-```go theme={null}
+```go
 type Event struct {
     Topic        string    // 类别："assets.new", "vulnerabilities.new"
     ID           string    // 唯一事件标识符（UUID）
@@ -80,7 +78,7 @@ type Event struct {
 
 使用 `generate_event` 函数从工作流发出事件：
 
-```yaml theme={null}
+```yaml
 name: subdomain-discovery
 kind: module
 
@@ -99,7 +97,7 @@ steps:
 
 发出单个结构化事件。
 
-```javascript theme={null}
+```javascript
 // 简单字符串数据
 generate_event("{{Workspace}}", "assets.new", "httpx", "url", "https://api.example.com")
 
@@ -126,7 +124,7 @@ generate_event("{{Workspace}}", "vulnerabilities.new", "nuclei", "finding", {
 
 为文件中每一非空行发出一个事件。
 
-```javascript theme={null}
+```javascript
 generate_event_from_file("{{Workspace}}", "assets.new", "subfinder", "subdomain", "{{Output}}/subdomains.txt")
 // 返回：42（生成的事件数）
 ```
@@ -145,7 +143,7 @@ generate_event_from_file("{{Workspace}}", "assets.new", "subfinder", "subdomain"
 
 向设置中配置的外部 Webhook 端点发送事件：
 
-```yaml theme={null}
+```yaml
 - name: notify-finding
   type: function
   function: |
@@ -156,7 +154,7 @@ generate_event_from_file("{{Workspace}}", "assets.new", "subfinder", "subdomain"
 
 向所有已配置的 Webhook 发送纯文本消息。
 
-```javascript theme={null}
+```javascript
 notify_webhook("Scan completed for example.com with 15 findings")
 ```
 
@@ -164,7 +162,7 @@ notify_webhook("Scan completed for example.com with 15 findings")
 
 向所有已配置的 Webhook 发送结构化事件。
 
-```javascript theme={null}
+```javascript
 send_webhook_event("scan_complete", {
   target: "example.com",
   findings: 15,
@@ -176,7 +174,7 @@ send_webhook_event("scan_complete", {
 
 通过 API 接收 Webhook 以触发工作流：
 
-```bash theme={null}
+```bash
 curl -X POST http://localhost:8080/osm/api/events/emit \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -194,7 +192,7 @@ curl -X POST http://localhost:8080/osm/api/events/emit \
 
 在工作流 YAML 中配置事件触发器：
 
-```yaml theme={null}
+```yaml
 name: probe-new-assets
 kind: module
 
@@ -242,7 +240,7 @@ steps:
 
 使用简洁语法将多个事件字段映射到工作流变量：
 
-```yaml theme={null}
+```yaml
 input:
   # 变量名: 表达式
   target: event_data.url
@@ -268,7 +266,7 @@ input:
 | `param`      | 静态参数                 | `name` - 参数名称                   |
 | `file`       | 从文件读取               | `path` - 文件路径                   |
 
-```yaml theme={null}
+```yaml
 # 从事件数据中提取字段
 input:
   type: event_data
@@ -291,7 +289,7 @@ input:
 
 事件主题支持通配符模式以实现灵活匹配：
 
-```yaml theme={null}
+```yaml
 event:
   topic: "assets.*"         # 匹配 assets.new, assets.updated 等
   topic: "*.new"            # 匹配 assets.new, vulns.new 等
@@ -311,7 +309,7 @@ event:
 
 #### 可用事件字段
 
-```javascript theme={null}
+```javascript
 event.topic      // "assets.new"
 event.id         // "uuid-string"
 event.name       // "subdomain.discovered"
@@ -323,7 +321,7 @@ event.workspace  // "myworkspace"
 
 #### 过滤器示例
 
-```yaml theme={null}
+```yaml
 filters:
   # 匹配特定来源
   - "event.source == 'nuclei'"
@@ -341,7 +339,7 @@ filters:
 
 #### 常见过滤器模式
 
-```yaml theme={null}
+```yaml
 # 仅处理来自特定工具的事件
 filters:
   - "event.source == 'subfinder' || event.source == 'amass'"
@@ -363,7 +361,7 @@ filters:
 
 对于更高级的过滤，使用 `filter_functions`，它提供对工具函数的访问，如 `contains()`, `starts_with()`, `ends_with()`, `file_exists()` 等：
 
-```yaml theme={null}
+```yaml
 triggers:
   - name: on-api-endpoint
     on: event
@@ -399,7 +397,7 @@ triggers:
 
 可以同时使用 `filters`（基础 JS）和 `filter_functions`（带工具函数）。两者中的所有表达式都必须通过：
 
-```yaml theme={null}
+```yaml
 event:
   topic: "vulns.discovered"
   # 基础 JS 表达式
@@ -426,7 +424,7 @@ event:
 
 **使用示例：**
 
-```yaml theme={null}
+```yaml
 name: event-processor
 kind: module
 
@@ -459,7 +457,7 @@ steps:
 
 使用时间窗口去重防止重复触发工作流：
 
-```yaml theme={null}
+```yaml
 triggers:
   - name: on-unique-url
     on: event
@@ -498,7 +496,7 @@ triggers:
 
 为领域特定事件定义自己的主题：
 
-```javascript theme={null}
+```javascript
 // 自定义发现事件
 generate_event("{{Workspace}}", "discovery.api-endpoint", "custom-scanner", "endpoint", {...})
 
@@ -524,7 +522,7 @@ generate_event("{{Workspace}}", "notification.slack", "workflow", "message", {..
 
 #### 阶段 1：子域名枚举
 
-```yaml theme={null}
+```yaml
 name: subdomain-enum
 kind: module
 

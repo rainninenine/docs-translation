@@ -1,14 +1,8 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索前，请使用此文件发现所有可用页面。
-
 # Introduction
 
 > 欢迎阅读 Osmedeus 文档
 
-<Frame>
-  <img src="https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/intro.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=43a6a6ae5ee5fd29db1cd56af06b62e7" alt="介绍横幅" width="1920" height="1080" data-path="images/introduction/intro.png" />
-</Frame>
+![介绍横幅](https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/intro.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=43a6a6ae5ee5fd29db1cd56af06b62e7)
 
 [Osmedeus](https://github.com/j3ssie/osmedeus) 是一个以安全为核心的声明式编排引擎，它将复杂的工作流自动化简化为可审计的 YAML 定义，并集成了加密数据处理、安全凭据管理和沙箱执行。
 
@@ -26,20 +20,20 @@
 * **REST API 和 Web UI** - 完整的 API 服务器，支持 Webhook 触发器、数据库查询和嵌入式仪表盘可视化
 
 <Card>
-  <img className="block dark:hidden rounded-t-lg w-full" src="https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-light.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=ba8b1b76ac34683092004f9ce8986abf" alt="浅色模式下的名人堂" width="1281" height="717" data-path="images/introduction/hall-of-fame-light.png" />
+  ![浅色模式下的名人堂](https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-light.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=ba8b1b76ac34683092004f9ce8986abf)
 
-  <img className="hidden dark:block rounded-t-lg w-full" src="https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-dark.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=7227b6cbb7e6a9fc7290dfea70fc51c9" alt="深色模式下的名人堂" width="1920" height="1080" data-path="images/introduction/hall-of-fame-dark.png" />
+  ![深色模式下的名人堂](https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-dark.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=7227b6cbb7e6a9fc7290dfea70fc51c9)
 </Card>
 
 ## 快速入门
 
 <Columns cols={2}>
   <Tile href="/getting-started/cli" title="CLI 界面">
-    <img src="https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-progress.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=a0c448d97d10f955df1589deb2251cc6" alt="CLI 运行预览" width="2704" height="1438" data-path="images/cli/cli-run-progress.png" />
+    ![CLI 运行预览](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-progress.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=a0c448d97d10f955df1589deb2251cc6)
   </Tile>
 
   <Tile href="/getting-started/web-ui" title="Web UI 界面">
-    <img src="https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/web-ui/web-ui-assets.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=0ce499f1662852c2a17527d2b49a01b7" alt="Web UI 资产预览" width="2974" height="2378" data-path="images/web-ui/web-ui-assets.png" />
+    ![Web UI 资产预览](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/web-ui/web-ui-assets.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=0ce499f1662852c2a17527d2b49a01b7)
   </Tile>
 </Columns>
 

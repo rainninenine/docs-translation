@@ -14,7 +14,7 @@
 
 所有工作流共享以下通用顶层字段：
 
-```yaml theme={null}
+```yaml
 kind: module | flow | fragment     # 必需：工作流类型
 name: workflow-name               # 必需：唯一标识符
 description: "描述文本"           # 可选：人类可读的描述
@@ -56,7 +56,7 @@ dependencies:                     # 可选：外部工具依赖
 
 ### Extends 字段
 
-```yaml theme={null}
+```yaml
 # 按名称（在工作流目录中搜索）
 extends: parent-workflow-name
 
@@ -69,7 +69,7 @@ extends: modules/base-module.yaml
 
 ### Override 模式
 
-```yaml theme={null}
+```yaml
 override:
   # 覆盖特定参数属性
   params:
@@ -144,7 +144,7 @@ override:
 
 ### 继承示例
 
-```yaml theme={null}
+```yaml
 # 父级：base-enum.yaml
 kind: module
 name: base-enum
@@ -177,7 +177,7 @@ override:
 
 模块包含按顺序或基于依赖关系执行的步骤。
 
-```yaml theme={null}
+```yaml
 kind: module
 name: my-module
 
@@ -219,7 +219,7 @@ steps:
 
 流程编排多个模块及其依赖关系。
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: my-flow
 
@@ -252,7 +252,7 @@ modules:
 
 片段是可复用的步骤集合，可包含在模块中。
 
-```yaml theme={null}
+```yaml
 kind: fragment
 name: common-subdomain-enum
 
@@ -276,7 +276,7 @@ steps:
 
 在本地执行 Shell 命令。
 
-```yaml theme={null}
+```yaml
 - name: run-nuclei
   type: bash
   command: "nuclei -l {{Output}}/urls.txt -o {{Output}}/nuclei.json"
@@ -301,7 +301,7 @@ steps:
 
 通过 Goja JavaScript 运行时执行实用函数。
 
-```yaml theme={null}
+```yaml
 - name: check-results
   type: function
   function: "fileExists('{{Output}}/results.txt')"
@@ -321,7 +321,7 @@ steps:
 
 并发执行多个步骤。
 
-```yaml theme={null}
+```yaml
 - name: parallel-enum
   type: parallel-steps
   parallel_steps:
@@ -337,7 +337,7 @@ steps:
 
 对输入行进行迭代并并行处理。
 
-```yaml theme={null}
+```yaml
 - name: scan-subdomains
   type: foreach
   input: "{{Output}}/subdomains.txt"
@@ -353,7 +353,7 @@ steps:
 
 在 Docker 容器中或通过 SSH 执行命令。
 
-```yaml theme={null}
+```yaml
 # Docker 执行
 - name: docker-scan
   type: remote-bash
@@ -381,7 +381,7 @@ steps:
 
 发起 HTTP 请求并捕获响应。
 
-```yaml theme={null}
+```yaml
 - name: api-call
   type: http
   url: "https://api.example.com/scan"
@@ -398,7 +398,7 @@ steps:
 
 与 LLM API（兼容 OpenAI）交互。
 
-```yaml theme={null}
+```yaml
 - name: analyze-vulns
   type: llm
   messages:
@@ -427,7 +427,7 @@ steps:
 
 内联执行片段，支持可选覆盖。
 
-```yaml theme={null}
+```yaml
 # 在模块中包含片段
 includes:
   - path: fragments/subdomain-enum.yaml
@@ -446,7 +446,7 @@ steps:
 
 以下字段适用于所有步骤类型：
 
-```yaml theme={null}
+```yaml
 - name: step-name                    # 必需：唯一步骤标识符
   type: bash                         # 必需：步骤类型
 
@@ -481,7 +481,7 @@ steps:
 
 步骤支持使用 switch/case 语法进行条件分支：
 
-```yaml theme={null}
+```yaml
 decision:
   switch: "{{variable}}"
   cases:
@@ -496,7 +496,7 @@ decision:
 
 参数定义工作流输入及验证：
 
-```yaml theme={null}
+```yaml
 params:
   - name: threads
     type: number
@@ -518,7 +518,7 @@ params:
 
 触发器定义自动执行：
 
-```yaml theme={null}
+```yaml
 triggers:
   # Cron 触发器
   - name: daily-scan
@@ -551,7 +551,7 @@ triggers:
 
 ### 模块示例
 
-```yaml theme={null}
+```yaml
 kind: module
 name: subdomain-enum
 description: "枚举目标域的子域"
@@ -580,7 +580,7 @@ steps:
 
 ### 流程示例
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: full-recon
 description: "完整侦察工作流"
@@ -606,7 +606,7 @@ modules:
 
 ### 片段示例
 
-```yaml theme={null}
+```yaml
 kind: fragment
 name: common-cleanup
 description: "通用清理步骤"
@@ -623,7 +623,7 @@ steps:
 
 ### 使用片段的模块
 
-```yaml theme={null}
+```yaml
 kind: module
 name: subdomain-scan
 

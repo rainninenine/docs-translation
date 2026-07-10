@@ -1,7 +1,3 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索前，请使用此文件发现所有可用页面。
-
 # Deployment
 
 > 构建、部署和运行 Osmedeus 于各种环境
@@ -16,7 +12,7 @@
 
 ## 快速开始
 
-```bash theme={null}
+```bash
 # 本地构建并运行
 make build
 ./build/bin/osmedeus serve
@@ -33,7 +29,7 @@ docker-compose -f build/docker/docker-compose.yml up -d
 
 ### 本地构建
 
-```bash theme={null}
+```bash
 # 为当前平台构建
 make build
 
@@ -49,7 +45,7 @@ make build-windows   # Windows amd64
 
 ### Docker 构建
 
-```bash theme={null}
+```bash
 docker build -t osmedeus:latest -f build/docker/Dockerfile .
 
 # 开发镜像（带热重载）
@@ -65,7 +61,7 @@ docker build --build-arg VERSION=5.1.0 -t osmedeus:5.1.0 -f build/docker/Dockerf
 
 #### 直接二进制
 
-```bash theme={null}
+```bash
 # 运行服务器
 ./build/bin/osmedeus serve --port 8001
 
@@ -78,7 +74,7 @@ docker build --build-arg VERSION=5.1.0 -t osmedeus:5.1.0 -f build/docker/Dockerf
 
 #### Docker 容器
 
-```bash theme={null}
+```bash
 # 基础服务器
 docker run -d \
   --name osmedeus \
@@ -125,7 +121,7 @@ docker run -d \
 
 #### Docker Compose 设置
 
-```bash theme={null}
+```bash
 # 启动 2 个工作节点（默认）
 docker-compose -f build/docker/docker-compose.yml up -d
 
@@ -146,7 +142,7 @@ docker-compose -f build/docker/docker-compose.yml down -v
 
 如果不使用 Docker Compose：
 
-```bash theme={null}
+```bash
 # 1. 启动 Redis
 docker run -d --name redis -p 6379:6379 redis:7-alpine
 
@@ -159,7 +155,7 @@ docker run -d --name redis -p 6379:6379 redis:7-alpine
 
 #### 提交分布式扫描
 
-```bash theme={null}
+```bash
 # 提交扫描到分布式队列
 ./build/bin/osmedeus scan -f general -t example.com -D
 
@@ -176,7 +172,7 @@ docker run -d --name redis -p 6379:6379 redis:7-alpine
 
 默认位置：`~/osmedeus-base/osm-settings.yaml`
 
-```yaml theme={null}
+```yaml
 base_folder: ~/osmedeus-base
 
 environments:
@@ -223,7 +219,7 @@ scan_tactic:
 
 ### 命令行覆盖
 
-```bash theme={null}
+```bash
 # 覆盖基础文件夹
 osmedeus -b /custom/path scan -f general -t example.com
 
@@ -256,7 +252,7 @@ osmedeus scan -f general -t example.com -D --redis-url redis://user:pass@host:63
 
 ### 扩展
 
-```bash theme={null}
+```bash
 # 动态扩展工作节点
 docker-compose -f build/docker/docker-compose.yml up -d --scale worker=10
 
@@ -273,7 +269,7 @@ docker-compose -f build/docker/docker-compose.yml ps
 3. **TLS**：使用反向代理（nginx, traefik）实现 HTTPS
 4. **网络**：将 Redis 访问限制在内部网络
 
-```yaml theme={null}
+```yaml
 # 示例：安全的 JWT 配置
 client:
   jwt:
@@ -285,7 +281,7 @@ client:
 
 docker-compose.yml 中的工作节点资源限制：
 
-```yaml theme={null}
+```yaml
 deploy:
   resources:
     limits:
@@ -302,7 +298,7 @@ deploy:
 
 Docker 镜像包含内置健康检查：
 
-```bash theme={null}
+```bash
 # 检查主节点健康
 curl http://localhost:8001/health
 
@@ -312,7 +308,7 @@ curl http://localhost:8001/health/ready
 
 ### 日志
 
-```bash theme={null}
+```bash
 # 查看主节点日志
 docker logs osmedeus-master -f
 
@@ -327,7 +323,7 @@ docker-compose -f build/docker/docker-compose.yml logs -f worker
 
 对于生产环境，考虑使用 PostgreSQL 替代 SQLite：
 
-```yaml theme={null}
+```yaml
 database:
   db_engine: postgresql
   db_host: postgres-host
@@ -339,7 +335,7 @@ database:
 
 ### 备份
 
-```bash theme={null}
+```bash
 # 备份卷
 docker run --rm \
   -v osmedeus-data:/data \
@@ -365,7 +361,7 @@ docker run --rm \
 
 ### 快速开始
 
-```bash theme={null}
+```bash
 cd build/infra
 
 # 1. 复制并编辑清单
@@ -422,7 +418,7 @@ build/infra/
 
 在部署时使用 `-e` 覆盖任何变量：
 
-```bash theme={null}
+```bash
 # 自定义端口和线程设置
 ansible-playbook -i inventory.ini deploy.yaml \
   -e osm_server_port=9090 \
@@ -441,7 +437,7 @@ ansible-playbook -i inventory.ini deploy.yaml \
 
 ### 部署后
 
-```bash theme={null}
+```bash
 # 检查服务状态
 ssh root@YOUR_SERVER systemctl status osmedeus
 
@@ -458,7 +454,7 @@ ssh root@YOUR_SERVER journalctl -u osmedeus -f
 
 **工作节点无法连接：**
 
-```bash theme={null}
+```bash
 # 检查 Redis 连接
 docker exec osmedeus-redis redis-cli ping
 
@@ -468,7 +464,7 @@ docker-compose logs worker
 
 **扫描未执行：**
 
-```bash theme={null}
+```bash
 # 验证工作流是否存在
 ./build/bin/osmedeus workflow list
 
@@ -478,14 +474,14 @@ docker logs osmedeus-master
 
 **端口冲突：**
 
-```bash theme={null}
+```bash
 # 使用不同端口
 docker run -p 8080:8001 osmedeus:latest
 ```
 
 ### 有用命令
 
-```bash theme={null}
+```bash
 # 环境健康检查
 ./build/bin/osmedeus health
 

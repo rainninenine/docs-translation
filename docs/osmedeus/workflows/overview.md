@@ -12,7 +12,7 @@
 
 ### 模块
 
-```yaml theme={null}
+```yaml
 kind: module                    # 类型：module 或 flow
 name: my-workflow               # 唯一工作流名称
 description: What it does       # 人类可读的描述
@@ -40,7 +40,7 @@ steps:                          # 执行步骤
 
 ### Flow
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: my-pipeline
 description: Multi-module pipeline
@@ -76,7 +76,7 @@ modules:                        # 模块引用
 
 ### 参数
 
-```yaml theme={null}
+```yaml
 params:
   - name: target              # 参数名称（必需）
     required: true            # 必须提供（默认：false）
@@ -88,7 +88,7 @@ params:
 
 ### 标签
 
-```yaml theme={null}
+```yaml
 tags:
   - reconnaissance
   - subdomain
@@ -97,7 +97,7 @@ tags:
 
 过滤工作流：
 
-```bash theme={null}
+```bash
 osmedeus workflow list --tags reconnaissance
 ```
 
@@ -107,7 +107,7 @@ osmedeus workflow list --tags reconnaissance
 
 用于单一、聚焦的任务：
 
-```yaml theme={null}
+```yaml
 kind: module
 name: subdomain-enum
 
@@ -133,7 +133,7 @@ steps:
 
 用于多阶段管线：
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: full-recon
 
@@ -157,7 +157,7 @@ modules:
 
 ## 模块引用（Flow 中）
 
-```yaml theme={null}
+```yaml
 modules:
   - name: module-name          # 引用名称
     path: modules/file.yaml    # 模块 YAML 路径
@@ -184,7 +184,7 @@ workflows/
 
 ## 运行工作流
 
-```bash theme={null}
+```bash
 # 运行模块
 osmedeus run -m subdomain-enum -t example.com
 
@@ -218,7 +218,7 @@ osmedeus workflow validate subdomain-enum
 
 工作流 Linter 在基本解析之外提供额外的最佳实践检查。它有助于在运行时之前发现潜在问题，同时允许工作流即使有警告也能执行。
 
-```bash theme={null}
+```bash
 # Lint 工作流
 osmedeus workflow lint my-workflow.yaml
 osmedeus workflow lint my-workflow              # 按名称
@@ -273,7 +273,7 @@ osmedeus workflow lint workflow.yaml --check
 
 ### 基本继承
 
-```yaml theme={null}
+```yaml
 kind: module
 name: subdomain-enum-fast
 extends: subdomain-enum-base
@@ -294,7 +294,7 @@ override:
 
 `extends` 字段指定要继承的父工作流：
 
-```yaml theme={null}
+```yaml
 extends: parent-workflow-name     # 按名称（同一目录）
 extends: ./parent.yaml            # 按相对路径
 extends: modules/base-module.yaml # 按工作流目录下的路径
@@ -315,7 +315,7 @@ extends: modules/base-module.yaml # 按工作流目录下的路径
 
 #### Append 模式（默认）
 
-```yaml theme={null}
+```yaml
 kind: module
 name: extended-enum
 extends: base-enum
@@ -331,7 +331,7 @@ override:
 
 #### Prepend 模式
 
-```yaml theme={null}
+```yaml
 override:
   steps:
     mode: prepend
@@ -343,7 +343,7 @@ override:
 
 #### Replace 模式
 
-```yaml theme={null}
+```yaml
 override:
   steps:
     mode: replace
@@ -355,7 +355,7 @@ override:
 
 #### Merge 模式
 
-```yaml theme={null}
+```yaml
 override:
   steps:
     mode: merge
@@ -393,7 +393,7 @@ override:
 
 覆盖特定参数属性：
 
-```yaml theme={null}
+```yaml
 override:
   params:
     threads:
@@ -409,7 +409,7 @@ override:
 
 工作流可以形成继承链：
 
-```yaml theme={null}
+```yaml
 # base.yaml
 kind: module
 name: scan-base

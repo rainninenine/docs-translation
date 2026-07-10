@@ -1,14 +1,10 @@
-> ## Documentation Index
-> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
-> Use this file to discover all available pages before exploring further.
-
 # Cloud Quick Reference
 
 > Quick reference for cloud configuration, infrastructure management, and command flags
 
 ## Setup (30 seconds)
 
-```bash theme={null}
+```bash
 # Enable cloud feature
 osmedeus config set cloud.enabled true
 
@@ -32,7 +28,7 @@ osmedeus cloud config set setup.commands.add "osmedeus install base --preset"
 
 ## Configuration
 
-```bash theme={null}
+```bash
 osmedeus cloud config list                              # View all settings
 osmedeus cloud config set <key> <value>                 # Set a value
 osmedeus cloud config set <key>.add <value>             # Append to list
@@ -55,7 +51,7 @@ osmedeus cloud config set limits.max_instances 10
 
 ## Infrastructure
 
-```bash theme={null}
+```bash
 osmedeus cloud create --provider aws -n 3               # Create instances
 osmedeus cloud list                                     # List active infra
 osmedeus cloud destroy <infra-id>                       # Destroy by ID
@@ -65,7 +61,7 @@ osmedeus cloud setup --reuse-with "1.2.3.4,5.6.7.8"    # Setup existing machines
 
 ## Workflow Mode
 
-```bash theme={null}
+```bash
 # Basic
 osmedeus cloud run -f fast -t example.com
 osmedeus cloud run -m enum-subdomain -t example.com --timeout 30m
@@ -90,7 +86,7 @@ osmedeus cloud run -f fast -t example.com --sync-back --auto-destroy
 
 Run arbitrary commands on cloud instances (mutually exclusive with `-f`/`-m`):
 
-```bash theme={null}
+```bash
 # Single command
 osmedeus cloud run --custom-cmd "nmap -sV {{Target}}" -t example.com
 

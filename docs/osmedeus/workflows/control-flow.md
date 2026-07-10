@@ -12,7 +12,7 @@
 
 如果条件为假，则跳过步骤。
 
-```yaml theme={null}
+```yaml
 - name: nuclei-scan
   type: bash
   pre_condition: 'fileLength("{{Output}}/live.txt") > 0'
@@ -21,7 +21,7 @@
 
 ### 常用条件
 
-```yaml theme={null}
+```yaml
 # 文件存在
 pre_condition: 'fileExists("{{Output}}/targets.txt")'
 
@@ -58,7 +58,7 @@ pre_condition: 'fileExists("{{Output}}/subs.txt") && {{threads}} > 0'
 
 ### 基本依赖
 
-```yaml theme={null}
+```yaml
 steps:
   - name: subfinder
     type: bash
@@ -109,7 +109,7 @@ steps:
 
 ### 多重依赖
 
-```yaml theme={null}
+```yaml
 - name: final-report
   type: bash
   depends_on:
@@ -129,7 +129,7 @@ steps:
 2. 所有下游步骤也被标记为失败
 3. 独立分支继续执行
 
-```yaml theme={null}
+```yaml
 # 如果 subfinder 失败：
 # - merge-results 被跳过
 # - amass 继续执行（独立）
@@ -139,7 +139,7 @@ steps:
 
 没有 `depends_on` 时，步骤按顺序依次执行：
 
-```yaml theme={null}
+```yaml
 steps:
   - name: step1     # 先运行
     type: bash
@@ -152,7 +152,7 @@ steps:
 
 使用 `depends_on` 时，步骤可以并行运行：
 
-```yaml theme={null}
+```yaml
 steps:
   - name: step1     # 先运行（与 step2 并行）
     type: bash
@@ -177,7 +177,7 @@ steps:
 | `invalid-depends-on` | 依赖引用了不存在的步骤 |
 | `circular-dependency` | 检测到循环依赖 |
 
-```bash theme={null}
+```bash
 osmedeus workflow lint my-workflow.yaml
 ```
 
@@ -185,7 +185,7 @@ osmedeus workflow lint my-workflow.yaml
 
 Flow 也支持模块的 `depends_on`：
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: full-pipeline
 
@@ -207,7 +207,7 @@ modules:
 
 根据变量值使用 switch/case 语法路由到不同步骤。
 
-```yaml theme={null}
+```yaml
 steps:
   - name: check-hosts
     type: bash
@@ -235,7 +235,7 @@ steps:
 
 ### 决策语法
 
-```yaml theme={null}
+```yaml
 decision:
   switch: "{{variable}}"      # 要评估的模板表达式
   cases:                       # 值到动作的映射
@@ -253,7 +253,7 @@ decision:
 
 Case 支持运行命令或函数，而不仅仅是 `goto`：
 
-```yaml theme={null}
+```yaml
 decision:
   switch: "{{target_type}}"
   cases:
@@ -284,7 +284,7 @@ decision:
 
 除了 switch/case，决策还支持 `conditions` —— 一个在运行时评估的 JavaScript 表达式数组。所有匹配的条件都会执行（无短路）：
 
-```yaml theme={null}
+```yaml
 - name: smart-routing
   type: function
   function: log_info("Evaluating conditions")
@@ -333,7 +333,7 @@ decision:
 
 当步骤成功时执行动作。
 
-```yaml theme={null}
+```yaml
 - name: scan
   type: bash
   command: nuclei -l {{Output}}/hosts.txt -o {{Output}}/vulns.txt
@@ -359,7 +359,7 @@ decision:
 | `notify` | 发送通知 | `message` |
 | `continue` | 继续执行 | - |
 
-```yaml theme={null}
+```yaml
 on_success:
   - action: log
     message: "Step completed"
@@ -379,7 +379,7 @@ on_success:
 
 处理步骤失败。
 
-```yaml theme={null}
+```yaml
 - name: risky-scan
   type: bash
   command: aggressive-tool {{target}}
@@ -403,7 +403,7 @@ on_success:
 | `run` | 运行恢复命令 |
 | `notify` | 发送错误通知 |
 
-```yaml theme={null}
+```yaml
 on_error:
   - action: abort       # 出错时停止工作流
 
@@ -415,7 +415,7 @@ on_error:
 
 ## 组合示例
 
-```yaml theme={null}
+```yaml
 steps:
   - name: enumerate
     type: bash
@@ -474,7 +474,7 @@ steps:
 
 Flow 中的条件模块执行：
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: conditional-flow
 
@@ -502,7 +502,7 @@ modules:
 
 ### If-Then-Else
 
-```yaml theme={null}
+```yaml
 - name: check
   type: function
   function: fileLength("{{Output}}/data.txt")
@@ -537,7 +537,7 @@ modules:
 
 ### 提前退出
 
-```yaml theme={null}
+```yaml
 - name: validate
   type: function
   function: fileExists("{{Output}}/required.txt")
@@ -556,7 +556,7 @@ modules:
 
 ### 带重试的循环
 
-```yaml theme={null}
+```yaml
 - name: attempt-scan
   type: bash
   command: flaky-scanner {{target}}
@@ -604,19 +604,19 @@ modules:
 ## 最佳实践
 
 1. **在处理前始终检查文件是否存在**
-   ```yaml theme={null}
+   ```yaml
    pre_condition: 'fileExists("{{Output}}/input.txt")'
    ```
 
 2. **使用有意义的日志消息**
-   ```yaml theme={null}
+   ```yaml
    on_success:
      - action: log
        message: "Found {{count}} subdomains for {{target}}"
    ```
 
 3. **优雅地处理错误**
-   ```yaml theme={null}
+   ```yaml
    on_error:
      - action: log
        message: "Step failed, attempting fallback"
@@ -624,7 +624,7 @@ modules:
    ```
 
 4. **对复杂逻辑使用决策路由**
-   ```yaml theme={null}
+   ```yaml
    decision:
      switch: "{{dataset_size}}"
      cases:
@@ -633,7 +633,7 @@ modules:
    ```
 
 5. **干净地结束工作流**
-   ```yaml theme={null}
+   ```yaml
    decision:
      switch: "{{fatal_error}}"
      cases:

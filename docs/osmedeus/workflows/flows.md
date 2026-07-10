@@ -1,7 +1,3 @@
-> ## Documentation Index
-> 获取完整文档索引：https://docs.osmedeus.org/llms.txt
-> 在进一步探索前，请使用此文件发现所有可用页面。
-
 # Flow Workflows
 
 > 带依赖关系的多模块编排
@@ -10,7 +6,7 @@ Flow 编排多个模块，支持依赖关系和条件执行。
 
 ## Basic Flow
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: basic-recon
 description: 基础侦察工作流
@@ -36,7 +32,7 @@ modules:
 
 ## Module Reference Fields
 
-```yaml theme={null}
+```yaml
 modules:
   - name: module-name           # 必需：引用名称
     path: path/to/module.yaml   # 必需：模块文件路径
@@ -51,7 +47,7 @@ modules:
 
 Flow 内该模块引用的唯一标识符。
 
-```yaml theme={null}
+```yaml
 - name: subdomain-enum      # 用于 depends_on 引用
 ```
 
@@ -59,7 +55,7 @@ Flow 内该模块引用的唯一标识符。
 
 模块 YAML 文件的路径（相对于工作流文件夹）。
 
-```yaml theme={null}
+```yaml
 - name: nuclei
   path: modules/nuclei-scan.yaml
 ```
@@ -68,7 +64,7 @@ Flow 内该模块引用的唯一标识符。
 
 必须在此模块运行前完成的模块名称列表。
 
-```yaml theme={null}
+```yaml
 - name: vuln-scan
   path: modules/vuln.yaml
   depends_on:
@@ -80,7 +76,7 @@ Flow 内该模块引用的唯一标识符。
 
 在模块执行前评估的 JavaScript 表达式。若为 false，则跳过该模块。
 
-```yaml theme={null}
+```yaml
 - name: screenshot
   path: modules/screenshot.yaml
   depends_on: [http-probe]
@@ -89,7 +85,7 @@ Flow 内该模块引用的唯一标识符。
 
 常见条件：
 
-```yaml theme={null}
+```yaml
 # 文件有内容
 condition: 'fileLength("{{Output}}/data.txt") > 0'
 
@@ -104,7 +100,7 @@ condition: '{{enable_vuln_scan}} == "true"'
 
 覆盖模块参数。
 
-```yaml theme={null}
+```yaml
 - name: nuclei-fast
   path: modules/nuclei-scan.yaml
   params:
@@ -116,7 +112,7 @@ condition: '{{enable_vuln_scan}} == "true"'
 
 模块可以直接定义步骤，而无需引用外部 YAML 文件。这对于不需要单独文件的简单、自包含任务非常有用。
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: quick-recon
 
@@ -154,7 +150,7 @@ modules:
 
 ### Inline Module with Runner
 
-```yaml theme={null}
+```yaml
 modules:
   - name: docker-scan
     description: 在 Docker 中运行 nuclei
@@ -173,7 +169,7 @@ modules:
 
 Flow 创建一个有向无环图（DAG）：
 
-```yaml theme={null}
+```yaml
 modules:
   - name: A
     path: modules/a.yaml
@@ -203,7 +199,7 @@ modules:
 
 ## Complex Flow Example
 
-```yaml theme={null}
+```yaml
 kind: flow
 name: full-assessment
 description: 完整安全评估
@@ -266,7 +262,7 @@ modules:
 
 ## Running Flows
 
-```bash theme={null}
+```bash
 # 基本执行
 osmedeus run -f full-assessment -t example.com
 
@@ -284,7 +280,7 @@ osmedeus run -f full-assessment -t example.com --dry-run
 
 使用精确匹配（`-x`）或子串匹配（`-X`）跳过特定模块：
 
-```bash theme={null}
+```bash
 # 精确匹配 - 按名称排除特定模块
 osmedeus run -f full-assessment -t target -x screenshot -x port-scan
 
@@ -301,7 +297,7 @@ osmedeus run -f full-assessment -t target -X nmap -X nuclei
 
 ## Flow-Level vs Module-Level Params
 
-```yaml theme={null}
+```yaml
 # Flow 定义
 kind: flow
 name: my-flow
@@ -332,7 +328,7 @@ modules:
 * 依赖该模块的模块将被跳过
 * 其他独立分支继续执行
 
-```yaml theme={null}
+```yaml
 modules:
   - name: A
     path: modules/a.yaml
@@ -350,7 +346,7 @@ modules:
 ## Best Practices
 
 1. **分组相关模块**
-   ```yaml theme={null}
+   ```yaml
    # 被动侦察组
    - name: subdomain-enum
    - name: dns-enum
@@ -361,19 +357,19 @@ modules:
    ```
 
 2. **对可选模块使用条件**
-   ```yaml theme={null}
+   ```yaml
    - name: active-scan
      condition: '{{enable_active}} == "true"'
    ```
 
 3. **在处理前检查文件是否存在**
-   ```yaml theme={null}
+   ```yaml
    - name: process-results
      condition: 'fileLength("{{Output}}/data.txt") > 0'
    ```
 
 4. **参数化模块行为**
-   ```yaml theme={null}
+   ```yaml
    - name: nuclei
      params:
        threads: "{{threads}}"
@@ -381,7 +377,7 @@ modules:
    ```
 
 5. **添加最终报告模块**
-   ```yaml theme={null}
+   ```yaml
    - name: report
      depends_on: [all, other, modules]
    ```

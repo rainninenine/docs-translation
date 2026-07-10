@@ -12,7 +12,7 @@
 
 ### 5分钟内完成首次扫描
 
-```bash theme={null}
+```bash
 # 步骤0：启用云功能
 osmedeus config set cloud.enabled true
 
@@ -39,7 +39,7 @@ osmedeus cloud run -f fast -t example.com --auto-destroy
 
 ### 验证配置
 
-```bash theme={null}
+```bash
 # 查看所有设置
 osmedeus cloud config list
 
@@ -51,7 +51,7 @@ osmedeus cloud config list --show-secrets
 
 ### 单个目标
 
-```bash theme={null}
+```bash
 # 运行工作流
 osmedeus cloud run -f fast -t example.com
 
@@ -67,7 +67,7 @@ osmedeus cloud run -f fast -t example.com --provider digitalocean
 
 ### 多个目标
 
-```bash theme={null}
+```bash
 # 将目标分布到5个工作节点
 osmedeus cloud run -f fast -T targets.txt --instances 5
 
@@ -80,7 +80,7 @@ osmedeus cloud run -f fast -T targets.txt --instances 5 --chunk-count 3
 
 ### 完整生命周期
 
-```bash theme={null}
+```bash
 # 预置、扫描、同步结果回本地，然后销毁
 osmedeus cloud run -f fast -t example.com --sync-back --auto-destroy
 
@@ -90,7 +90,7 @@ osmedeus cloud run -f fast -T targets.txt --instances 3 --sync-back --auto-destr
 
 ### 重用基础设施
 
-```bash theme={null}
+```bash
 # 首次运行：预置并扫描
 osmedeus cloud run -f fast -t target1.com
 
@@ -108,7 +108,7 @@ osmedeus cloud destroy <infra-id>
 
 ### 基本用法
 
-```bash theme={null}
+```bash
 # 运行单个命令
 osmedeus cloud run --custom-cmd "nmap -sV {{Target}}" -t example.com
 
@@ -118,7 +118,7 @@ osmedeus cloud run --custom-cmd "whoami && id" -t example.com --reuse
 
 ### 侦察管道
 
-```bash theme={null}
+```bash
 # 子域名枚举 → HTTP探测 → 截图
 osmedeus cloud run \
   --custom-cmd "subfinder -d {{Target}} -o /tmp/osm-custom/subs.txt" \
@@ -130,7 +130,7 @@ osmedeus cloud run \
 
 ### 漏洞扫描
 
-```bash theme={null}
+```bash
 # 使用自定义模板的Nuclei扫描
 osmedeus cloud run \
   --custom-cmd "nuclei -u {{Target}} -t cves/ -o /tmp/osm-custom/cves.txt" \
@@ -142,7 +142,7 @@ osmedeus cloud run \
 
 ### 大规模端口扫描
 
-```bash theme={null}
+```bash
 # 将IP列表分布到10个工作节点，使用masscan + nmap
 osmedeus cloud run \
   --custom-cmd "cat {{Target}} | while read ip; do masscan \$ip -p1-65535 --rate 1000 -oG /tmp/osm-custom/masscan-\$(echo \$ip | tr '.' '-').txt; done" \
@@ -153,7 +153,7 @@ osmedeus cloud run \
 
 ### SAST扫描
 
-```bash theme={null}
+```bash
 # 克隆仓库并运行semgrep
 osmedeus cloud run \
   --custom-cmd "git clone https://github.com/org/repo.git /tmp/osm-custom/repo" \
@@ -164,7 +164,7 @@ osmedeus cloud run \
 
 ### 自定义同步目标
 
-```bash theme={null}
+```bash
 # 下载到特定本地目录
 osmedeus cloud run \
   --custom-cmd "nmap -sV {{Target}} -oA /tmp/osm-custom/nmap" \
@@ -177,7 +177,7 @@ osmedeus cloud run \
 
 ### 使用工作节点变量
 
-```bash theme={null}
+```bash
 # 在扫描结果旁记录工作节点信息
 osmedeus cloud run \
   --custom-cmd "echo 'Worker {{worker_name}} ({{public_ip}}) scanning {{Target}}' > /tmp/osm-custom/info.txt" \
@@ -190,7 +190,7 @@ osmedeus cloud run \
 
 ### 漏洞赏金：枚举多个项目
 
-```bash theme={null}
+```bash
 # targets.txt包含：hackerone.com, bugcrowd.com, intigriti.com, ...
 osmedeus cloud run \
   -f general -T targets.txt --instances 5 \
@@ -199,7 +199,7 @@ osmedeus cloud run \
 
 ### 扫描大范围IP
 
-```bash theme={null}
+```bash
 # ip-ranges.txt包含CIDR范围，每行一个
 osmedeus cloud run \
   --custom-cmd "cat {{Target}} | nmap -iL - -sV -oA /tmp/osm-custom/scan" \
@@ -209,7 +209,7 @@ osmedeus cloud run \
 
 ### 持久化活动
 
-```bash theme={null}
+```bash
 # 一次性创建基础设施
 osmedeus cloud create --provider aws -n 3
 
@@ -225,7 +225,7 @@ osmedeus cloud destroy all --force
 
 ### 多供应商策略
 
-```bash theme={null}
+```bash
 # 使用Hetzner进行廉价批量扫描
 osmedeus cloud run -f fast -T targets.txt --instances 10 --provider hetzner
 
@@ -237,7 +237,7 @@ osmedeus cloud run -f fast -t us-target.com --provider aws
 
 ### AWS
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.aws.access_key_id ${AWS_ACCESS_KEY_ID}
 osmedeus cloud config set providers.aws.secret_access_key ${AWS_SECRET_ACCESS_KEY}
 osmedeus cloud config set providers.aws.region ap-southeast-1
@@ -250,7 +250,7 @@ osmedeus cloud config set defaults.provider aws
 
 ### Hetzner
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.hetzner.token ${HETZNER_API_TOKEN}
 osmedeus cloud config set providers.hetzner.location fsn1
 osmedeus cloud config set providers.hetzner.server_type cx22
@@ -261,7 +261,7 @@ osmedeus cloud config set defaults.provider hetzner
 
 ### DigitalOcean
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.digitalocean.token ${DO_TOKEN}
 osmedeus cloud config set providers.digitalocean.region sgp1
 osmedeus cloud config set providers.digitalocean.size s-2vcpu-4gb
@@ -270,7 +270,7 @@ osmedeus cloud config set defaults.provider digitalocean
 
 ### GCP
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.gcp.project_id ${GCP_PROJECT}
 osmedeus cloud config set providers.gcp.credentials_file /path/to/sa-key.json
 osmedeus cloud config set providers.gcp.region us-central1
@@ -282,7 +282,7 @@ osmedeus cloud config set defaults.provider gcp
 
 ### Linode
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.linode.token ${LINODE_TOKEN}
 osmedeus cloud config set providers.linode.region ap-south
 osmedeus cloud config set providers.linode.type g6-standard-2
@@ -291,7 +291,7 @@ osmedeus cloud config set defaults.provider linode
 
 ### Azure
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.azure.subscription_id ${AZURE_SUB_ID}
 osmedeus cloud config set providers.azure.tenant_id ${AZURE_TENANT_ID}
 osmedeus cloud config set providers.azure.client_id ${AZURE_CLIENT_ID}
@@ -307,7 +307,7 @@ osmedeus cloud config set defaults.provider azure
 
 在VM上预安装工具，创建快照，然后使用快照实现更快的启动：
 
-```bash theme={null}
+```bash
 # 1. 通过供应商控制台手动创建并设置VM
 # 2. 安装osmedeus及所有工具
 # 3. 在供应商控制台中创建快照/镜像
@@ -327,7 +327,7 @@ osmedeus cloud config set providers.hetzner.image 12345678
 
 ### 自定义工作节点设置
 
-```bash theme={null}
+```bash
 # 添加设置命令（在每个工作节点上按顺序运行）
 osmedeus cloud config set setup.commands.add "apt-get update && apt-get install -y nmap masscan"
 osmedeus cloud config set setup.commands.add "go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest"
@@ -338,7 +338,7 @@ osmedeus cloud config set setup.post_commands.add "echo '{{worker_name}} at {{pu
 
 ### Ansible设置
 
-```bash theme={null}
+```bash
 osmedeus cloud config set setup.ansible.enabled true
 osmedeus cloud config set setup.ansible.playbook_path /path/to/setup.yaml
 osmedeus cloud run -f fast -t example.com --ansible
@@ -348,7 +348,7 @@ osmedeus cloud run -f fast -t example.com --ansible
 
 所有配置值支持`${ENV_VAR}`语法：
 
-```bash theme={null}
+```bash
 osmedeus cloud config set providers.aws.access_key_id '${AWS_ACCESS_KEY_ID}'
 osmedeus cloud config set providers.aws.secret_access_key '${AWS_SECRET_ACCESS_KEY}'
 ```
@@ -359,21 +359,21 @@ osmedeus cloud config set providers.aws.secret_access_key '${AWS_SECRET_ACCESS_K
 
 ### 工作节点无法连接
 
-```bash theme={null}
+```bash
 osmedeus cloud run -f fast -t example.com --verbose-setup  # 查看SSH输出
 osmedeus cloud run -f fast -t example.com --debug          # 完整调试日志
 ```
 
 ### 孤立的基础设施
 
-```bash theme={null}
+```bash
 osmedeus cloud list                    # 检查正在运行的内容
 osmedeus cloud destroy all --force     # 紧急清理
 ```
 
 ### 成本限制超出
 
-```bash theme={null}
+```bash
 osmedeus cloud config set limits.max_hourly_spend 5.00   # 提高限制
 ```
 

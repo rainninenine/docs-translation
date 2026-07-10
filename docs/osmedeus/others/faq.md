@@ -11,9 +11,13 @@
 ## 1. 通用问题
 
 <ResponseField name="什么是 Osmedeus？">
-  <Expandable title="答案">
+  <details>
+<summary>答案</summary>
+
     Osmedeus 是一个用于安全自动化的工作流引擎。它执行 YAML 定义的工作流，支持多种执行环境（主机、Docker、SSH）、调度和分布式扫描。
-  </Expandable>
+  
+
+</details>
 </ResponseField>
 
 <ResponseField name="系统要求是什么？">
@@ -27,8 +31,10 @@
 </ResponseField>
 
 <ResponseField name="如何安装 Osmedeus？">
-  <Expandable title="答案">
-    ```bash theme={null}
+  <details>
+<summary>答案</summary>
+
+    ```bash
     # 从源码构建
     make build
 
@@ -38,23 +44,33 @@
     # 安装安全工具
     osmedeus install binary --all
     ```
-  </Expandable>
+  
+
+</details>
 </ResponseField>
 
 <ResponseField name="Osmedeus 是否支持 AI/LLM 集成？我可以使用 Claude Code 和 Codex 等工具吗？">
-  <Expandable title="答案">
+  <details>
+<summary>答案</summary>
+
     当然可以。Osmedeus 内置了对 LLM 的支持，你可以在工作流中使用它来生成侦察报告、编写自定义脚本，甚至构建你自己的代理工作流。你可以查看 [LLM 工作流示例](/advanced/llm/) 了解其工作原理。
 
     请注意，使用 LLM 可能需要你拥有 LLM 提供商的 API 密钥，并且可能会根据你的使用情况产生额外费用。在工作流中使用 LLM 时，请始终监控你的使用情况和成本。
 
     由于 Osmedeus 是一个编排框架，你可以利用它来协调你自己的自定义 AI/LLM 工具，包括直接在 YAML 工作流中集成 Claude Code 或 OpenCode。例如，你可以设计一个自定义代理，作为定义管道的一部分调用多个工具，并将其无缝插入到你的工作流中。灵活性几乎是无限的。
-  </Expandable>
+  
+
+</details>
 </ResponseField>
 
 <ResponseField name="Osmedeus 是否有我可以在代理中使用的 AI 技能？" defaultOpen="true">
-  <Expandable title="答案">
+  <details>
+<summary>答案</summary>
+
     是的，我在 [github.com/osmedeus/osmedeus-skills](https://github.com/osmedeus/osmedeus-skills) 上构建了 [osmedeus-expert](https://github.com/osmedeus/osmedeus-skills) 技能，你可以在你的代理工具中使用它来编写 YAML 工作流、运行 CLI 命令和配置高级功能。
-  </Expandable>
+  
+
+</details>
 </ResponseField>
 
 ***
@@ -93,7 +109,7 @@
 
 <ResponseField name="如何运行基本扫描？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     # 运行流程工作流
     osmedeus run -f general -t example.com
 
@@ -105,7 +121,7 @@
 
 <ResponseField name="如何扫描多个目标？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     # 从命令行
     osmedeus run -f fast -t target1.com -t target2.com
 
@@ -117,7 +133,7 @@
 
 <ResponseField name="如何设置超时？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     osmedeus run -m port-scan -t example.com --timeout 2h
     ```
   </Expandable>
@@ -268,7 +284,7 @@
   <Expandable title="答案" defaultOpen="true">
     在工作流目录中创建一个 YAML 文件：
 
-    ```yaml theme={null}
+    ```yaml
     name: my-workflow
     kind: module
     description: 我的自定义工作流
@@ -304,7 +320,7 @@
 
 <ResponseField name="如何启动 API 服务器？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     osmedeus server
     ```
 
@@ -314,7 +330,7 @@
 
 <ResponseField name="我遇到了 `failed to run database migrations` 错误。我该怎么办？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     $ osmedeus server
     2026-02-16T22:59:11+07:00 ERROR Failed to create server {"error": "failed to run database migrations: failed to create index: SQL logic error: no such column: webhook_uuid (1)"}
     Error: failed to run database migrations: failed to create index: SQL logic error: no such column: ... (1)
@@ -326,7 +342,7 @@
 
 <ResponseField name="如何通过 API 进行身份验证？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     # 获取 JWT 令牌
     curl -X POST http://localhost:8002/osm/api/login       -H "Content-Type: application/json"       -d '{"username": "osmedeus", "password": "admin"}'
 
@@ -338,7 +354,7 @@
 
 <ResponseField name="如何禁用身份验证？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     osmedeus server --no-auth
     ```
   </Expandable>
@@ -356,7 +372,7 @@
 
 <ResponseField name="如何安排定期扫描？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     # 通过 CLI（创建 cron 计划）
     osmedeus run -f subdomain-enum -t example.com --schedule "0 2 * * *"
 
@@ -399,7 +415,7 @@
 
 <ResponseField name="如何在 Docker 中运行扫描？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     osmedeus run -m port-scan -t example.com --runner docker --docker-image osmedeus/osmedeus:latest
     ```
   </Expandable>
@@ -407,7 +423,7 @@
 
 <ResponseField name="如何在远程主机上运行扫描？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     osmedeus run -m port-scan -t example.com --runner ssh --ssh-host worker.example.com
     ```
   </Expandable>
@@ -421,13 +437,13 @@
   <Expandable title="答案" defaultOpen="true">
     启动主节点：
 
-    ```bash theme={null}
+    ```bash
     osmedeus server --master
     ```
 
     加入工作节点：
 
-    ```bash theme={null}
+    ```bash
     osmedeus worker join --master http://master:8002
     ```
   </Expandable>
@@ -435,7 +451,7 @@
 
 <ResponseField name="如何向分布式池提交任务？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     curl -X POST http://localhost:8002/osm/api/tasks       -H "Authorization: Bearer $TOKEN"       -H "Content-Type: application/json"       -d '{
         "workflow_name": "subdomain-enum",
         "target": "example.com"
@@ -450,7 +466,7 @@
 
 <ResponseField name="如何检查工具是否已安装？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     osmedeus install binary --all --check
     ```
   </Expandable>
@@ -458,7 +474,7 @@
 
 <ResponseField name="如何安装缺失的工具？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     # 安装特定工具
     osmedeus install binary --name nuclei --name httpx
 
@@ -472,7 +488,7 @@
   <Expandable title="答案" defaultOpen="true">
     日志存储在工作区中：
 
-    ```bash theme={null}
+    ```bash
     cat ~/osmedeus-base/workspaces/<target>/log/execution.log
     ```
   </Expandable>
@@ -480,7 +496,7 @@
 
 <ResponseField name="如何导出工作区以进行共享？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     osmedeus snapshot export <workspace>
     ```
   </Expandable>
@@ -488,7 +504,7 @@
 
 <ResponseField name="如何导入共享的工作区？">
   <Expandable title="答案" defaultOpen="true">
-    ```bash theme={null}
+    ```bash
     osmedeus snapshot import snapshot.zip
     ```
   </Expandable>
@@ -508,14 +524,14 @@
   <Expandable title="答案" defaultOpen="true">
     编辑 `osm-settings.yaml`：
 
-    ```yaml theme={null}
+    ```yaml
     server:
       port: 9000
     ```
 
     或者使用 `--port` 标志：
 
-    ```bash theme={null}
+    ```bash
     osmedeus server --port 9000
     ```
   </Expandable>
@@ -525,7 +541,7 @@
   <Expandable title="答案" defaultOpen="true">
     编辑 `osm-settings.yaml`：
 
-    ```yaml theme={null}
+    ```yaml
     database:
       db_engine: sqlite3  # 或 postgres
       host: localhost
@@ -543,7 +559,7 @@
   <Expandable title="答案" defaultOpen="true">
     只需运行以下命令来清理工作区和数据库，并生成默认的 osmedeus 配置：
 
-    ```bash theme={null}
+    ```bash
     rm -rf ~/osmedeus-base ~/workspaces-osmedeus
     osmedeus install base --preset
     ```
@@ -554,7 +570,7 @@
   <Expandable title="答案" defaultOpen="true">
     只需运行以下命令来清理工作区和数据库：
 
-    ```bash theme={null}
+    ```bash
     rm -rf ~/workspaces-osmedeus
     osmedeus db clean --force
     ```
@@ -565,7 +581,7 @@
   <Expandable title="答案" defaultOpen="true">
     只需运行以下命令：
 
-    ```bash theme={null}
+    ```bash
     rm -rf ~/.osmedeus ~/osmedeus-base ~/workspaces-osmedeus
     rm -rf $(which osmedeus)
     ```
