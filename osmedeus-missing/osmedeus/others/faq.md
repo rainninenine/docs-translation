@@ -1,0 +1,582 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# FAQs
+
+> FAQs and Common Errors
+
+A collection of frequently asked questions along with explanations of common errors and how to resolve them.
+
+## 1. General
+
+<ResponseField name="What is Osmedeus?">
+  <Expandable title="Answer">
+    Osmedeus is a workflow engine for security automation. It executes YAML-defined workflows with support for multiple execution environments (host, Docker, SSH), scheduling, and distributed scanning.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="What are the system requirements?">
+  <Expandable title="Answer" defaultOpen="true">
+    The Osmedeus core engine is lightweight and can run anywhere with almost any specs. <br />
+
+    However, if you plan to use it for **reconnaissance** (which is the main use case), it is recommended to use a modern Linux, macOS, or Windows system with WSL. <br />
+
+    Since running reconnaissance generates heavy network traffic, it is also recommended to run Osmedeus in a cloud environment, **such as a VM, Compute Engine, or EC2**, to achieve the best performance.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I install Osmedeus?">
+  <Expandable title="Answer">
+    ```bash theme={null}
+    # Build from source
+    make build
+
+    # Install to $GOBIN
+    make install
+
+    # Install security tools
+    osmedeus install binary --all
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Does Osmedeus support AI/LLM integration? Can I use tools like Claude Code and Codex with it?">
+  <Expandable title="Answer">
+    Yes of course. Osmedeus has built-in support for LLMs and you can use it in your workflow to do things like generating recon reports, writing custom scripts, or even building your own agentic workflow. You can check out the [LLM Workflow Example](/advanced/llm/) to see how it works.
+
+    Be aware that using LLMs may require you to have API keys for the LLM provider and may incur additional costs based on your usage. Always monitor your usage and costs when using LLMs in your workflows.
+
+    Since Osmedeus is an orchestration framework, you can leverage it to coordinate your own custom AI/LLM tools including integrations like Claude Code or OpenCode directly within your YAML workflows. For instance, you could design a custom agent that invokes multiple tools as part of a defined pipeline and seamlessly plug it into your workflow. The flexibility is virtually unlimited.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Does Osmedeus have an AI Skills that I can use in my agent?" defaultOpen="true">
+  <Expandable title="Answer">
+    Yes, I've built the [osmedeus-expert](https://github.com/osmedeus/osmedeus-skills) skill at [github.com/osmedeus/osmedeus-skills](https://github.com/osmedeus/osmedeus-skills) and you can use it in your agentic tool to writing YAML workflows, running CLI commands, and configuring advanced features.
+  </Expandable>
+</ResponseField>
+
+***
+
+## 2. Binary Installation
+
+<ResponseField name="Why do I need to install external binary?">
+  <Expandable title="Answer" defaultOpen="true">
+    Osmedeus is a standalone Golang binary and works perfectly fine on its own. However, when using Osmedeus to run YAML workflows for security automation, it often needs to call external tools like `httpx, nuclei, ffuf, etc`. These tools must be installed and available on your system for those workflows to function properly.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="I encountered an error when installing the binary or running `osmedeus health`. What should I do?">
+  <Expandable title="Answer" defaultOpen="true">
+    Not all binaries listed in the registry are required for every workflow. Your scans may still function correctly even if some tools are missing.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Do I need to install all the binaries in the registry using `osmedeus install binary --all --install-optional` ?">
+  <Expandable title="Answer" defaultOpen="true">
+    No. Installing all tools is completely optional. The registry includes additional tools that are commonly used in YAML workflows, but you only need the ones required for your specific workflow. Installing everything is not necessary for running a basic workflow.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="I tried everything I can but still haven't managed to install the required binaries. What should I do?">
+  <Expandable title="Answer" defaultOpen="true">
+    Like I said above, not all binaries listed in the registry are required for every workflow. Your scans may still function correctly even if some tools are missing.
+
+    If you would like the ideal setup then I recommend using Docker to run Osmedeus and its workflows. This ensures that all dependencies are met and eliminates any compatibility issues. See the [Docker Setup](/getting-started/docker-setup) for more details.
+  </Expandable>
+</ResponseField>
+
+***
+
+## 3. Scan Execution & Scanning Results
+
+<ResponseField name="How do I run a basic scan?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    # Run a flow workflow
+    osmedeus run -f general -t example.com
+
+    # Run a module workflow
+    osmedeus run -m vulnerability-scan -t example.com
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I scan multiple targets?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    # From command line
+    osmedeus run -f fast -t target1.com -t target2.com
+
+    # From file
+    osmedeus run -f fast -T targets.txt -c 5
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I set a timeout?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    osmedeus run -m port-scan -t example.com --timeout 2h
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Where are scan results stored?">
+  <Expandable title="Answer" defaultOpen="true">
+    Results are stored in workspaces at `~/workspaces-osmedeus/<target>/`.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Where should I put my token (Github, Shodan, etc)?">
+  <Expandable title="Answer" defaultOpen="true">
+    All you need to do is follow [**this guide to setup the token**](/getting-started/basic-setup/)
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How can I setup to send notification?">
+  <Expandable title="Answer" defaultOpen="true">
+    All you need to do is follow [**this guide to setup notification**](/advanced/notification-and-cdn/)
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Where I can get a live support?">
+  <Expandable title="Answer" defaultOpen="true">
+    You can Join **`https://discord.gg/mtQG2FQsYA`** to see if anyone can help. I might answer from time to time but I couldn't promise to answer every single of them.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Does it support Proxy?">
+  <Expandable title="Answer" defaultOpen="true">
+    Nope, natively it doesn't support proxy. But since the design of the tool is running other 3rd party tools and a lot of them don't support proxy by default. I've already considered proxychains but it makes it extremely slow and breaks a lot of things.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Why was my scan stuck at portscan?">
+  <Expandable title="Answer" defaultOpen="true">
+    It will stay there because it got a sudo password prompt. Some special tools require *root* permission to run like **nmap**. Make sure you allow **nmap** can be run without sudo password prompt.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Why did my scan such as vulnerability scanning, port scanning, or content discovery take so long?">
+  <Expandable title="Answer" defaultOpen="true">
+    It's probably because the thing you put in was really big. Think about trying to run the content discovery against **2000 different hosts**. That's why it takes a long time.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Why Osmedeus didn't find any vulnerability even when I scan it with the intentionally vulnerable app?">
+  <Expandable title="Answer" defaultOpen="true">
+    Again it very much depends on your target. Osmedeus really shines on large scope targets, not the single intentionally vulnerable web app. Just scan some random VDP then you will see the result.
+    The reason it won't find any vulnerability on the intentionally vulnerable app is the **vulnscan** module won't support it. But you're always welcome to customize the workflow to do so.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="I found a new tool that is pretty awesome. Can you add it in Osmedeus?">
+  <Expandable title="Answer" defaultOpen="true">
+    Yes, just follow [**this guide**](/advanced/writing-your-first-workflow/) to add it to your workflow.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Does the X scan run tool Y or not?">
+  <Expandable title="Answer" defaultOpen="true">
+    1. Read the flow and module files to determine what a step actually runs
+    2. Seriously, read the flow and module files.
+    3. Remember that you were warned twice about reading the flow and module files.
+    4. Search for the tool command in the workflow folder to confirm whether it is used or not (e.g: `rg -F 'nuclei' ~/osmedeus-base/workflows/`)
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Where can I find the password for the Web UI?">
+  <Expandable title="Answer" defaultOpen="true">
+    Please refer to [**this page**](/getting-started/web-ui/) to start a web server and get credentials. You may need to run this command `osmedeus config view server.password`
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How can I keep the scan or the web UI running in the background?">
+  <Expandable title="Answer" defaultOpen="true">
+    The simplest way to do it is running the process under `https://tmuxcheatsheet.com/` . Other than that you can setup a service to run the osmedeus web server as a background process.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="What should I do if Osmedeus found a vulnerability X?">
+  <Expandable title="Answer" defaultOpen="true">
+    1. Read the vulnerability X description.
+    2. Seriously, read the vulnerability X description.
+    3. Remember that you were warned twice about reading the vulnerability X description.
+    4. Search for that vulnerability X name.
+    5. Manually verify the vulnerability X.
+    6. Still no results? maybe `https://letmegooglethat.com/?q=what+is+a+vulnerability+X`  can help you.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Osmedeus found some vulnerable subdomains, but I am unable to access them?">
+  <Expandable title="Answer" defaultOpen="true">
+    It is often the case that the availability of a subdomain found during a scan may not be the same when you attempt to manually verify it. This depends on the target and can vary.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="When I run with the `--debug` flag, I've noticed that certain commands are returning errors with exit statuses such as 128, 255, or -1. Is this to be expected?">
+  <Expandable title="Answer" defaultOpen="true">
+    Yes, it's normal for certain commands to exhibit expected exit statuses, as they may succeed under specific conditions. However, if you're confident that the raw bash command should succeed but is failing, please try copying the raw bash command and investigate why it's encountering issues.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How can I determine which workflow to run for my target?">
+  <Expandable title="Answer" defaultOpen="true">
+    You can run `osmedeus workflow ls` or `osmedeus workflow show <workflow-name> --verbose` to see the description and that would fit to the scan
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="The scan executed without issues, but the UI doesn't display any assets?">
+  <Expandable title="Answer" defaultOpen="true">
+    This is likely due to the fact that the workflow you executed did not generate any assets. You can verify this by checking the workspace directory located at `~/workspaces-osmedeus/<target>/` to see if any files were created.
+
+    It is also because the workflow doesn't use any database utility function to save the assets into the database. You can check the workflow file to see if it uses any database utility functions like `db_import_asset`. You can also see the full list of database related function at `osmedeus func ls db --example`
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Why I didn't see any notification even when I setup the ?">
+  <Expandable title="Answer" defaultOpen="true">
+    This is likely due to the fact that the workflow you executed did not generate any assets. You can verify this by checking the workspace directory located at `~/workspaces-osmedeus/<target>/` to see if any files were created.
+
+    It is also because the workflow doesn't use any notification utility function to save the assets into the notification. You can check the workflow file to see if it uses any notification utility functions like `notify_telegram`. You can also see the full list of notification related function at `osmedeus func ls noti --example`
+  </Expandable>
+</ResponseField>
+
+***
+
+## 4. Workflows
+
+<ResponseField name="What is the difference between a flow and a module?">
+  <Expandable title="Answer" defaultOpen="true">
+    * **Module**: A single workflow unit containing steps that execute sequentially
+    * **Flow**: Orchestrates multiple modules, allowing parallel execution and dependencies between modules
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Where are workflows stored?">
+  <Expandable title="Answer" defaultOpen="true">
+    Workflows are stored in `~/osmedeus-base/workflows/`:
+
+    * `flows/` - Flow workflows
+    * `modules/` - Module workflows
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I create a custom workflow?">
+  <Expandable title="Answer" defaultOpen="true">
+    Create a YAML file in the workflows directory:
+
+    ```yaml theme={null}
+    name: my-workflow
+    kind: module
+    description: My custom workflow
+    params:
+      - name: target
+        required: true
+    steps:
+      - name: scan-target
+        type: bash
+        command: nmap {{target}}
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="What step types are available?">
+  <Expandable title="Answer" defaultOpen="true">
+    | Type             | Description                             |
+    | ---------------- | --------------------------------------- |
+    | `bash`           | Execute shell commands                  |
+    | `function`       | Execute JavaScript utility functions    |
+    | `parallel-steps` | Run steps concurrently                  |
+    | `foreach`        | Iterate over items                      |
+    | `remote-bash`    | Execute in Docker or via SSH            |
+    | `http`           | Make HTTP requests                      |
+    | `llm`            | Execute LLM API calls                   |
+    | `agent`          | Agentic LLM execution with tool calling |
+  </Expandable>
+</ResponseField>
+
+***
+
+## 5. API & Server
+
+<ResponseField name="How do I start the API server?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    osmedeus server
+    ```
+
+    The server starts on port 8002 by default.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="I got this `failed to run database migrations`. What should I do?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    $ osmedeus server
+    2026-02-16T22:59:11+07:00 ERROR Failed to create server {"error": "failed to run database migrations: failed to create index: SQL logic error: no such column: webhook_uuid (1)"}
+    Error: failed to run database migrations: failed to create index: SQL logic error: no such column: ... (1)
+    ```
+
+    Error like this means that the database schema is outdated and the server cannot start. To fix this, you can run `osmedeus db clean --force` to clean up the database and then start the server again. This will reset your database, so make sure to backup any important data before running the command.
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I authenticate with the API?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    # Get a JWT token
+    curl -X POST http://localhost:8002/osm/api/login \
+      -H "Content-Type: application/json" \
+      -d '{"username": "osmedeus", "password": "admin"}'
+
+    # Use the token
+    curl http://localhost:8002/osm/api/workflows \
+      -H "Authorization: Bearer <token>"
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I disable authentication?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    osmedeus server --no-auth
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="Can I use API keys instead of JWT?">
+  <Expandable title="Answer" defaultOpen="true">
+    Yes, enable API key authentication in the server configuration. Then use the `X-API-Key` header instead of `Authorization: Bearer`.
+  </Expandable>
+</ResponseField>
+
+***
+
+## 6. Scheduling
+
+<ResponseField name="How do I schedule a recurring scan?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    # Via CLI (creates a cron schedule)
+    osmedeus run -f subdomain-enum -t example.com --schedule "0 2 * * *"
+
+    # Via API
+    curl -X POST http://localhost:8002/osm/api/schedules \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "daily-scan",
+        "workflow_name": "subdomain-enum",
+        "target": "example.com",
+        "schedule": "0 2 * * *"
+      }'
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="What cron format is used?">
+  <Expandable title="Answer" defaultOpen="true">
+    Standard 5-field cron: `minute hour day-of-month month day-of-week`
+
+    Examples:
+
+    * `0 2 * * *` - Daily at 2 AM
+    * `0 0 * * 0` - Weekly on Sunday
+    * `*/30 * * * *` - Every 30 minutes
+  </Expandable>
+</ResponseField>
+
+***
+
+## 7. Runners
+
+<ResponseField name="What runners are available?">
+  <Expandable title="Answer" defaultOpen="true">
+    | Runner   | Description                        |
+    | -------- | ---------------------------------- |
+    | `host`   | Execute on local machine (default) |
+    | `docker` | Execute in Docker containers       |
+    | `ssh`    | Execute on remote machines via SSH |
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I run a scan in Docker?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    osmedeus run -m port-scan -t example.com --runner docker --docker-image osmedeus/osmedeus:latest
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I run a scan on a remote host?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    osmedeus run -m port-scan -t example.com --runner ssh --ssh-host worker.example.com
+    ```
+  </Expandable>
+</ResponseField>
+
+***
+
+## 8. Distributed Mode
+
+<ResponseField name="How do I set up distributed scanning?">
+  <Expandable title="Answer" defaultOpen="true">
+    Start the master:
+
+    ```bash theme={null}
+    osmedeus server --master
+    ```
+
+    Join workers:
+
+    ```bash theme={null}
+    osmedeus worker join --master http://master:8002
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I submit tasks to the distributed pool?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    curl -X POST http://localhost:8002/osm/api/tasks \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "workflow_name": "subdomain-enum",
+        "target": "example.com"
+      }'
+    ```
+  </Expandable>
+</ResponseField>
+
+***
+
+## 9. Troubleshooting
+
+<ResponseField name="How do I check if tools are installed?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    osmedeus install binary --all --check
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I install missing tools?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    # Install specific tools
+    osmedeus install binary --name nuclei --name httpx
+
+    # Install all tools
+    osmedeus install binary --all
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I view scan logs?">
+  <Expandable title="Answer" defaultOpen="true">
+    Logs are stored in the workspace:
+
+    ```bash theme={null}
+    cat ~/osmedeus-base/workspaces/<target>/log/execution.log
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I export a workspace for sharing?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    osmedeus snapshot export <workspace>
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I import a shared workspace?">
+  <Expandable title="Answer" defaultOpen="true">
+    ```bash theme={null}
+    osmedeus snapshot import snapshot.zip
+    ```
+  </Expandable>
+</ResponseField>
+
+***
+
+## 10. Configuration
+
+<ResponseField name="Where is the configuration file?">
+  <Expandable title="Answer" defaultOpen="true">
+    `~/osmedeus-base/osm-settings.yaml`
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I change the default port?">
+  <Expandable title="Answer" defaultOpen="true">
+    Edit `osm-settings.yaml`:
+
+    ```yaml theme={null}
+    server:
+      port: 9000
+    ```
+
+    Or use the `--port` flag:
+
+    ```bash theme={null}
+    osmedeus server --port 9000
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I configure database settings?">
+  <Expandable title="Answer" defaultOpen="true">
+    Edit `osm-settings.yaml`:
+
+    ```yaml theme={null}
+    database:
+      db_engine: sqlite3  # or postgres
+      host: localhost
+      port: 5432
+      name: osmedeus
+      username: user
+      password: pass
+    ```
+  </Expandable>
+</ResponseField>
+
+## 11. Clean up & Uninstall
+
+<ResponseField name="How do I clean up the workspace?">
+  <Expandable title="Answer" defaultOpen="true">
+    just run the command below to clean up workspace and database and generate the default osmedeus config
+
+    ```bash theme={null}
+    rm -rf ~/osmedeus-base ~/workspaces-osmedeus
+    osmedeus install base --preset
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I clean up the workspace?">
+  <Expandable title="Answer" defaultOpen="true">
+    just run the command below to clean up workspace and database and generate the default osmedeus config
+
+    ```bash theme={null}
+    rm -rf ~/workspaces-osmedeus
+    osmedeus db clean --force
+    ```
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="How do I uninstall osmedeus?">
+  <Expandable title="Answer" defaultOpen="true">
+    just run the command below
+
+    ```bash theme={null}
+    rm -rf ~/.osmedeus ~/osmedeus-base ~/workspaces-osmedeus
+    rm -rf $(which osmedeus)
+    ```
+  </Expandable>
+</ResponseField>

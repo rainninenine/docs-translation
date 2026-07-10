@@ -1,0 +1,148 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Introduction
+
+> Welcome to the Osmedeus Documentation
+
+<Frame>
+  <img src="https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/intro.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=43a6a6ae5ee5fd29db1cd56af06b62e7" alt="Introduction Banner" width="1920" height="1080" data-path="images/introduction/intro.png" />
+</Frame>
+
+[Osmedeus](https://github.com/j3ssie/osmedeus) is a security focused declarative orchestration engine that simplifies complex workflow automation into auditable YAML definitions, complete with encrypted data handling, secure credential management, and sandboxed execution.
+
+Built for both beginners and experts, it delivers powerful, composable automation without sacrificing the integrity and safety of your infrastructure.
+
+## Key Features
+
+* **Declarative YAML Workflows** - Define pipelines with hooks, decision routing, module exclusion, and conditional branching across multiple runners (host, Docker, SSH)
+* **Distributed Execution** - Redis-based master-worker pattern with queue system, webhook triggers, and file sync across workers
+* **Rich Function Library** - 80+ utility functions including nmap integration, tmux sessions, SSH execution, TypeScript/Python scripting, SARIF parsing, and CDN/WAF classification
+* **Event-Driven Scheduling** - Cron, file-watch, and event triggers with filtering, deduplication, and delayed task queues
+* **Agentic LLM Steps** - Tool-calling agent loops with sub-agent orchestration, memory management, and structured output
+* **Cloud Infrastructure** - Provision and run scans across DigitalOcean, AWS, GCP, Linode, and Azure with cost controls and automatic cleanup
+* **Rich CLI Interface** - Interactive database queries, bulk function evaluation, workflow linting, progress bars, and comprehensive usage examples
+* **REST API & Web UI** - Full API server with webhook triggers, database queries, and embedded dashboard for visualization
+
+<Card>
+  <img className="block dark:hidden rounded-t-lg w-full" src="https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-light.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=ba8b1b76ac34683092004f9ce8986abf" alt="Hall of fame in light mode" width="1281" height="717" data-path="images/introduction/hall-of-fame-light.png" />
+
+  <img className="hidden dark:block rounded-t-lg w-full" src="https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-dark.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=7227b6cbb7e6a9fc7290dfea70fc51c9" alt="Hall of fame in dark mode" width="1920" height="1080" data-path="images/introduction/hall-of-fame-dark.png" />
+</Card>
+
+## Getting Started
+
+<Columns cols={2}>
+  <Tile href="/getting-started/cli" title="CLI Interface">
+    <img src="https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-progress.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=a0c448d97d10f955df1589deb2251cc6" alt="CLI Run preview" width="2704" height="1438" data-path="images/cli/cli-run-progress.png" />
+  </Tile>
+
+  <Tile href="/getting-started/web-ui" title="Web UI Interface">
+    <img src="https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/web-ui/web-ui-assets.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=0ce499f1662852c2a17527d2b49a01b7" alt="Web UI Assets preview" width="2974" height="2378" data-path="images/web-ui/web-ui-assets.png" />
+  </Tile>
+</Columns>
+
+<Card title="Quickstart" href="/quickstart" icon="rocket" horizontal>
+  Jump right in and run your first Osmedeus workflow in minutes.
+</Card>
+
+***
+
+## Advanced Installation and Configuration
+
+<Columns cols={2}>
+  <Card title="Installation" href="/getting-started/installation" icon="download">
+    Detailed instructions for installing Osmedeus on various platforms.
+  </Card>
+
+  <Card title="Configuration" href="/getting-started/configuration" icon="gear">
+    Configure the engine, runners, and environment variables.
+  </Card>
+
+  <Card title="Deployment" href="/getting-started/deployment" icon="server">
+    Deploy Osmedeus in a distributed environment or production setup.
+  </Card>
+
+  <Card title="Development" href="/getting-started/development" icon="display-code">
+    Resources for developers contributing to or extending Osmedeus.
+  </Card>
+</Columns>
+
+## Understanding Osmedeus
+
+### Core Concepts
+
+| Page                                     | Description                                                                         |
+| ---------------------------------------- | ----------------------------------------------------------------------------------- |
+| [Architecture](concepts/architecture.md) | Layered architecture and data flow                                                  |
+| [Workflows](concepts/workflows.md)       | Module vs Flow, execution lifecycle                                                 |
+| [Templates](concepts/templates.md)       | Variable interpolation and built-in variables                                       |
+| [Runners](concepts/runners.md)           | Host, Docker, SSH execution environments                                            |
+| [Functions](concepts/functions.md)       | JavaScript utility functions that bind to the core engine for use in workflow steps |
+
+### Advanced Topics
+
+| Page                                             | Description                          |
+| ------------------------------------------------ | ------------------------------------ |
+| [Distributed Execution](advanced/distributed.md) | Master-worker architecture           |
+| [Scheduling](advanced/scheduling.md)             | Cron, event, and file-watch triggers |
+| [LLM Integration](advanced/llm.md)               | AI-powered workflow steps            |
+| [Snapshots](advanced/snapshots.md)               | Workspace export and import          |
+
+***
+
+### Workflows
+
+| Page                                      | Description                                |
+| ----------------------------------------- | ------------------------------------------ |
+| [Overview](workflows/overview.md)         | YAML structure and workflow kinds          |
+| [Step Types](workflows/step-types.md)     | All 8 step types with examples             |
+| [Flows](workflows/flows.md)               | Module orchestration and dependencies      |
+| [Variables](workflows/variables.md)       | Parameters, exports, variable propagation  |
+| [Control Flow](workflows/control-flow.md) | Conditions, handlers, and decision routing |
+
+### Extending Osmedeus
+
+| Page                                        | Description                |
+| ------------------------------------------- | -------------------------- |
+| [Step Types](extending/step-types.md)       | Add custom step executors  |
+| [Runners](extending/runners.md)             | Implement new runner types |
+| [Functions](extending/functions.md)         | Register utility functions |
+| [CLI Commands](extending/cli-commands.md)   | Add new CLI commands       |
+| [API Endpoints](extending/api-endpoints.md) | Add new REST endpoints     |
+
+## Reference
+
+| Page                                            | Description          |
+| ----------------------------------------------- | -------------------- |
+| [Workflow Schema](reference/workflow-schema.md) | Complete YAML schema |
+| [Variables](reference/variables.md)             | Built-in variables   |
+| [Types](reference/types.md)                     | Go type definitions  |
+
+## Full Feature List
+
+* **Declarative YAML Workflows** - Define reconnaissance pipelines using simple, readable YAML syntax
+* **Multiple Runners** - Execute on local host, Docker containers, or remote machines via SSH
+* **Event-Driven Triggers** - Cron scheduling, file watching, and event-based workflow triggers with deduplication and filter functions
+* **Template Engine** - Powerful variable interpolation with built-in and custom variables
+* **Utility Functions** - Rich function library with event generation, bulk processing, and JSON operations
+* **REST API Server** - Manage, trigger, and cancel workflows programmatically
+* **Distributed Execution** - Scale with Redis-based master-worker pattern for parallel scanning (workers identified as `wosm-<uuid8>`)
+* **Notifications** - Telegram bot and webhook integrations
+* **Cloud Storage** - S3-compatible storage for artifact management
+* **LLM Integration** - AI-powered workflow steps with chat completions, embeddings, and agentic tool-calling loops
+* **Agent Step Type** - Agentic LLM execution with tool calling, sub-agents, and memory management
+* **SAST Integration** - SARIF parsing for Semgrep, Trivy, Kingfisher, Bearer with database import and markdown reporting
+* **Language Detection** - Auto-detect dominant programming language of source repositories (26+ languages)
+* **Preset Installation** - Reproducible deployments from curated preset repositories
+* **Workflow Hooks** - Pre/post scan steps via `hooks` field for setup and cleanup
+* **Queue System** - Delayed task execution with database and Redis polling, configurable concurrency
+* **Nmap Integration** - Port scanning with automatic XML/gnmap to JSONL conversion and database import
+* **Tmux Sessions** - Background process management via tmux (create, capture, send, kill sessions)
+* **SSH & Sync** - Remote execution and file synchronization across distributed workers
+* **TypeScript Execution** - Run inline TypeScript or TS files via Bun runtime
+* **Webhook Triggers** - Trigger workflow runs via unauthenticated webhook URLs
+* **CDN/WAF Classification** - Automatic asset classification from httpx data (CDN, cloud, WAF)
+* **Module Exclusion** - Exclude modules from flows by exact name or fuzzy substring matching
+* **Cloud Infrastructure** - Provision and manage cloud instances across multiple providers

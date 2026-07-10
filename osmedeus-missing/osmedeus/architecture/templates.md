@@ -1,0 +1,388 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Template Engine Architecture
+
+> Deep dive into the Osmedeus template engine implementation
+
+# Template Engine Architecture
+
+The template engine provides `{{variable}}` interpolation for workflows. It uses the pongo2 template library (Django-compatible) with custom optimizations for high-concurrency scenarios.
+
+## Template Syntax
+
+### Standard Variables
+
+Standard template variables use `{{variable}}` syntax:
+
+```yaml theme={null}
+command: "nuclei -l {{Output}}/urls.txt -o {{Output}}/nuclei.json"
+```
+
+### Secondary Variables (Foreach)
+
+Foreach loops use `[[variable]]` syntax to avoid conflicts:
+
+```yaml theme={null}
+step:
+  type: bash
+  command: "httpx -u [[subdomain]] >> {{Output}}/httpx.txt"
+```
+
+### Generator Functions
+
+Generator functions provide dynamic values:
+
+```yaml theme={null}
+exports:
+  random_id: "$rand(16)"
+  unique_id: "$uuid()"
+```
+
+## Engine Types
+
+The template system provides two engine implementations:
+
+| Engine          | Description                     | Use Case         |
+| --------------- | ------------------------------- | ---------------- |
+| `Engine`        | Standard single-threaded engine | Simple workflows |
+| `ShardedEngine` | High-performance sharded cache  | High concurrency |
+
+## TemplateEngine Interface
+
+```go theme={null}
+type TemplateEngine interface {
+    // Render renders a template string with the given context
+    Render(template string, ctx map[string]any) (string, error)
+
+    // RenderMap renders all template values in a map
+    RenderMap(m map[string]string, ctx map[string]any) (map[string]string, error)
+
+    // RenderSlice renders all template values in a slice
+    RenderSlice(s []string, ctx map[string]any) ([]string, error)
+
+    // RenderSecondary renders templates using [[ ]] delimiters
+    RenderSecondary(template string, ctx map[string]any) (string, error)
+
+    // HasSecondaryVariable checks if template contains [[ ]]
+    HasSecondaryVariable(template string) bool
+
+    // ExecuteGenerator executes a generator function expression
+    ExecuteGenerator(expr string) (string, error)
+
+    // RegisterGenerator registers a custom generator function
+    RegisterGenerator(name string, fn GeneratorFunc)
+}
+```
+
+## BatchRenderer Interface
+
+For high-throughput scenarios, the `BatchRenderer` interface extends `TemplateEngine`:
+
+```go theme={null}
+type BatchRenderer interface {
+    TemplateEngine
+
+    // RenderBatch renders multiple templates in a single operation
+    // Reduces lock contention by grouping templates
+    RenderBatch(requests []RenderRequest, ctx map[string]any) (map[string]string, error)
+}
+
+type RenderRequest struct {
+    Key      string // Identifier (e.g., field name)
+    Template string // Template string to render
+}
+```
+
+## ShardedEngine Architecture
+
+The `ShardedEngine` distributes templates across multiple shards to reduce lock contention:
+
+```
++-------------------------------------------------------------+
+|                     ShardedEngine                           |
+|                                                             |
+|   Template Hash (FNV-1a)                                    |
+|        |                                                    |
+|        v                                                    |
+|   +-----------------------------------------------------+   |
+|   |  Shard Selection: hash & shardMask                  |   |
+|   +-----------------------------------------------------+   |
+|        |                                                    |
+|        +--------+--------+--------+--------+                |
+|        v        v        v        v        v                |
+|   +--------++--------++--------++--------+...               |
+|   |Shard 0 ||Shard 1 ||Shard 2 ||Shard 3 |                  |
+|   | RWMutex|| RWMutex|| RWMutex|| RWMutex|                  |
+|   | LRU    || LRU    || LRU    || LRU    |                  |
+|   +--------++--------++--------++--------+                  |
+|                                                             |
++-------------------------------------------------------------+
+```
+
+### Configuration
+
+```go theme={null}
+type ShardedEngineConfig struct {
+    ShardCount     int  // Number of shards (power of 2)
+    ShardCacheSize int  // LRU cache size per shard
+    EnablePooling  bool // Use pooled context maps
+}
+
+// Defaults
+const DefaultShardCount = 16
+const DefaultShardCacheSize = 64
+```
+
+### Performance Features
+
+1. **Sharded Caching**: Templates are distributed across shards using FNV-1a hash, reducing lock contention.
+
+2. **RWMutex per Shard**: Read-heavy workloads benefit from reader-writer locks.
+
+3. **Quick Path**: Templates without `{{` are returned immediately without processing.
+
+4. **Lock-Free Execution**: Compiled pongo2 templates are thread-safe; execution happens outside locks.
+
+5. **Context Pooling**: Reusable context maps reduce GC pressure.
+
+### Render Flow
+
+```go theme={null}
+func (e *ShardedEngine) Render(template string, ctx map[string]any) (string, error) {
+    // Quick path: no template variables
+    if !strings.Contains(template, "{{") {
+        return template, nil
+    }
+
+    // Get shard based on template hash
+    shard := e.getShard(template)
+
+    // Try cache with read lock
+    shard.mu.RLock()
+    tpl, ok := shard.cache.Get(template)
+    shard.mu.RUnlock()
+
+    if !ok {
+        // Cache miss - parse and cache
+        shard.mu.Lock()
+        // Double-check after write lock
+        tpl, ok = shard.cache.Get(template)
+        if !ok {
+            tpl, err = pongo2.FromString(template)
+            if err != nil {
+                shard.mu.Unlock()
+                return "", err
+            }
+            shard.cache.Add(template, tpl)
+        }
+        shard.mu.Unlock()
+    }
+
+    // Execute outside lock (pongo2 is thread-safe)
+    return tpl.Execute(pongo2.Context(ctx))
+}
+```
+
+## Precompiled Templates
+
+The `PrecompiledRegistry` stores pre-compiled templates for workflows:
+
+```go theme={null}
+type PrecompiledRegistry struct {
+    mu        sync.RWMutex
+    workflows map[string]*WorkflowTemplates
+}
+
+type WorkflowTemplates struct {
+    // Key format: "stepName:fieldName"
+    Templates map[string]*pongo2.Template
+}
+```
+
+### Precompiler Interface
+
+```go theme={null}
+type Precompiler interface {
+    // PrecompileWorkflow scans and pre-compiles all templates
+    PrecompileWorkflow(workflowName string, templates map[string]string) error
+
+    // GetPrecompiled retrieves a pre-compiled template
+    GetPrecompiled(workflowName, key string) any
+
+    // ClearPrecompiled removes pre-compiled templates
+    ClearPrecompiled(workflowName string)
+}
+```
+
+### Usage
+
+```go theme={null}
+// At workflow load time
+registry := NewPrecompiledRegistry()
+templates := map[string]string{
+    "scan:command": "nuclei -l {{Output}}/urls.txt",
+    "scan:exports:result": "{{Output}}/nuclei.json",
+}
+registry.PrecompileWorkflow("my-workflow", templates)
+
+// At execution time
+if tpl := registry.GetPrecompiled("my-workflow", "scan:command"); tpl != nil {
+    // Use pre-compiled template
+}
+```
+
+## Context Pooling
+
+Context maps are pooled to reduce memory allocations:
+
+```go theme={null}
+var contextPool = sync.Pool{
+    New: func() interface{} {
+        return make(map[string]any, 32)
+    },
+}
+
+func GetContext() map[string]any {
+    return contextPool.Get().(map[string]any)
+}
+
+func PutContext(ctx map[string]any) {
+    clear(ctx)
+    contextPool.Put(ctx)
+}
+```
+
+### Normalized Boolean Handling
+
+Boolean values are normalized for template compatibility:
+
+```go theme={null}
+func NormalizeBoolsToPooled(ctx map[string]any) map[string]any {
+    pooled := GetContext()
+    for k, v := range ctx {
+        switch val := v.(type) {
+        case bool:
+            pooled[k] = val
+        case string:
+            if val == "true" {
+                pooled[k] = true
+            } else if val == "false" {
+                pooled[k] = false
+            } else {
+                pooled[k] = v
+            }
+        default:
+            pooled[k] = v
+        }
+    }
+    return pooled
+}
+```
+
+## Generator Functions
+
+Generator functions produce dynamic values:
+
+```go theme={null}
+type GeneratorFunc func(args ...string) (string, error)
+
+// Built-in generators
+var builtinGenerators = map[string]GeneratorFunc{
+    "rand": func(args ...string) (string, error) {
+        length := 8
+        if len(args) > 0 {
+            length, _ = strconv.Atoi(args[0])
+        }
+        return generateRandomString(length), nil
+    },
+    "uuid": func(args ...string) (string, error) {
+        return uuid.New().String(), nil
+    },
+    "timestamp": func(args ...string) (string, error) {
+        return strconv.FormatInt(time.Now().Unix(), 10), nil
+    },
+}
+```
+
+### Usage
+
+```yaml theme={null}
+exports:
+  random_id: "$rand(16)"
+  unique_id: "$uuid()"
+  time: "$timestamp()"
+```
+
+## Batch Rendering
+
+For high-throughput scenarios, batch rendering reduces lock acquisitions:
+
+```go theme={null}
+func (e *ShardedEngine) RenderBatch(requests []RenderRequest, ctx map[string]any) (map[string]string, error) {
+    results := make(map[string]string, len(requests))
+
+    // Prepare context once
+    processedCtx := NormalizeBoolsToPooled(ctx)
+    defer PutContext(processedCtx)
+
+    // Group by shard
+    shardGroups := make(map[uint32][]RenderRequest)
+    for _, req := range requests {
+        if !strings.Contains(req.Template, "{{") {
+            results[req.Key] = req.Template
+            continue
+        }
+        idx := e.getShardIndex(req.Template)
+        shardGroups[idx] = append(shardGroups[idx], req)
+    }
+
+    // Process each shard group
+    for idx, reqs := range shardGroups {
+        shard := e.shards[idx]
+        if err := e.renderShardBatch(shard, reqs, processedCtx, results); err != nil {
+            return nil, err
+        }
+    }
+
+    return results, nil
+}
+```
+
+## Secondary Template Rendering
+
+Foreach loops use `[[variable]]` to avoid conflicts with pre-rendered `{{variables}}`:
+
+```go theme={null}
+func (e *ShardedEngine) RenderSecondary(template string, ctx map[string]any) (string, error) {
+    if !strings.Contains(template, "[[") {
+        return template, nil
+    }
+
+    // Convert [[ ]] to {{ }} for pongo2
+    converted := strings.ReplaceAll(template, "[[", "{{")
+    converted = strings.ReplaceAll(converted, "]]", "}}")
+
+    return e.Render(converted, ctx)
+}
+```
+
+## Performance Benchmarks
+
+Typical performance characteristics:
+
+| Operation         | Single-threaded | 10 Concurrent | 100 Concurrent |
+| ----------------- | --------------- | ------------- | -------------- |
+| Simple render     | 500ns           | 600ns         | 800ns          |
+| Cached render     | 200ns           | 250ns         | 400ns          |
+| Batch render (10) | 1.5µs           | 2µs           | 3µs            |
+| Pre-compiled      | 150ns           | 200ns         | 350ns          |
+
+## Best Practices
+
+1. **Use pre-compilation** for frequently executed workflows
+2. **Enable pooling** for high-concurrency scenarios
+3. **Use batch rendering** when rendering multiple templates with the same context
+4. **Avoid unnecessary templates** - only use `{{}}` when variable substitution is needed
+5. **Use secondary syntax** `[[]]` for foreach loop variables to avoid double-rendering issues

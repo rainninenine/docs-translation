@@ -1,0 +1,301 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Functions Overview
+
+Osmedeus provides 190+ utility functions via a Goja JavaScript runtime. Functions can be used in workflow steps, conditions, and evaluated from the CLI or API.
+
+## Usage
+
+### In Steps
+
+```yaml theme={null}
+- name: log-start
+  type: function
+  function: log_info("Scanning {{target}}")
+
+- name: check-file
+  type: function
+  functions:
+    - log_info("Checking files")
+    - file_exists("{{Output}}/data.txt")
+```
+
+### In Conditions
+
+```yaml theme={null}
+- name: scan
+  type: bash
+  pre_condition: 'file_length("{{Output}}/hosts.txt") > 0'
+  command: nuclei -l {{Output}}/hosts.txt
+```
+
+### In Flow Conditions
+
+```yaml theme={null}
+modules:
+  - name: vuln-scan
+    path: modules/vuln.yaml
+    condition: 'file_exists("{{Output}}/live.txt")'
+```
+
+## Function Step Types
+
+### Single Function
+
+```yaml theme={null}
+- name: log
+  type: function
+  function: log_info("Message")
+```
+
+### Multiple Functions (Sequential)
+
+```yaml theme={null}
+- name: setup
+  type: function
+  functions:
+    - log_info("Step 1")
+    - log_info("Step 2")
+    - log_info("Step 3")
+```
+
+### Parallel Functions
+
+```yaml theme={null}
+- name: parallel-checks
+  type: function
+  parallel_functions:
+    - file_length("{{Output}}/file1.txt")
+    - file_length("{{Output}}/file2.txt")
+    - file_length("{{Output}}/file3.txt")
+```
+
+## Return Values
+
+Functions return values that can be:
+
+### Used in Exports
+
+```yaml theme={null}
+- name: count-lines
+  type: function
+  function: file_length("{{Output}}/hosts.txt")
+  exports:
+    host_count: "{{result}}"
+```
+
+### Used in Conditions
+
+```yaml theme={null}
+- name: scan
+  type: bash
+  pre_condition: 'file_length("{{Output}}/hosts.txt") > 0'
+  command: scan {{Output}}/hosts.txt
+```
+
+### Used in Decision Routing
+
+```yaml theme={null}
+- name: check
+  type: function
+  function: file_exists("{{Output}}/critical.txt")
+  exports:
+    has_critical: "{{result}}"
+  decision:
+    switch: "{{has_critical}}"
+    cases:
+      "true": { goto: handle-critical }
+    default: { goto: continue-normal }
+```
+
+## CLI Evaluation
+
+### Basic Evaluation
+
+```bash theme={null}
+# List all functions
+osmedeus func list
+
+# Evaluate a function
+osmedeus func e 'file_exists("/path/to/file")'
+
+# With target variable
+osmedeus func e 'log_info("Scanning " + target)' -t example.com
+
+# With custom parameters
+osmedeus func e 'log_info(prefix + target)' -t example.com --params 'prefix=test_'
+```
+
+### Script Source Priority
+
+The CLI determines the script to execute in this order:
+
+1. `--function-file` - Read script from file
+2. `-f/--function` - Function name with remaining args as arguments
+3. Positional argument - Direct expression after `e` or `eval`
+4. `-e/--eval` - Script via flag
+5. `--stdin` - Read from stdin
+
+### Bulk Processing
+
+Process multiple targets from a file:
+
+```bash theme={null}
+# Process targets from file
+osmedeus func e 'log_info("Processing: " + target)' -T targets.txt
+
+# With concurrency
+osmedeus func e 'http_get("https://" + target)' -T targets.txt -c 10
+
+# Using function files
+osmedeus func e --function-file check.js -T targets.txt -c 5
+
+# With parameters
+osmedeus func e 'log_info(prefix + target)' -T targets.txt --params 'prefix=test_' -c 5
+```
+
+### Function List Options
+
+```bash theme={null}
+# List all functions
+osmedeus func list
+
+# Search/filter functions
+osmedeus func list -s "event"
+osmedeus func list -s "file"
+
+# Show examples
+osmedeus func list --example
+
+# Custom column width
+osmedeus func list --width 80
+```
+
+## API Evaluation
+
+Evaluate functions via REST API:
+
+```bash theme={null}
+curl -X POST http://localhost:8002/osm/api/functions/eval \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"script": "file_length(\"/path/to/file\")"}'
+```
+
+List available functions:
+
+```bash theme={null}
+curl http://localhost:8002/osm/api/functions/list \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Context Variables
+
+Functions have access to execution context:
+
+```javascript theme={null}
+// Built-in variables are available
+log_info("Target: " + target)
+log_info("Output: " + "{{Output}}")
+
+// Exports from previous steps
+log_info("Previous result: " + "{{previous_export}}")
+```
+
+## Error Handling
+
+Functions that fail don't stop workflow execution unless you configure error handling:
+
+```yaml theme={null}
+- name: risky-function
+  type: function
+  function: read_file("/possibly/missing/file.txt")
+  on_error:
+    - action: log
+      message: "Function failed"
+    - action: continue
+```
+
+## Function Categories
+
+Osmedeus provides 190+ functions organized into 34 categories:
+
+| Category              | Description                               | Count |
+| --------------------- | ----------------------------------------- | ----- |
+| **File**              | File/directory operations, grep, glob     | 22    |
+| **String**            | String manipulation, regex matching       | 21    |
+| **Type Conversion**   | Parse/convert between types               | 4     |
+| **Type Detection**    | Detect input types (file, url, ip, etc.)  | 7     |
+| **Utility**           | General utilities (len, exec, sleep)      | 11    |
+| **Logging**           | Log messages with level prefixes          | 4     |
+| **Color Printing**    | Colored terminal output                   | 4     |
+| **Runtime Variables** | Get/set runtime variables                 | 2     |
+| **HTTP**              | HTTP requests and IP resolution           | 4     |
+| **LLM**               | LLM interaction and conversations         | 3     |
+| **Generation**        | Random strings and UUIDs                  | 2     |
+| **Encoding**          | Base64 encode/decode                      | 2     |
+| **Data Query**        | JQ-style JSON querying                    | 2     |
+| **Notification**      | Telegram and webhook notifications        | 8     |
+| **Event Generation**  | Structured event generation               | 2     |
+| **CDN/Storage**       | Cloud storage operations (S3-compatible)  | 11    |
+| **Unix Commands**     | Wrappers for sort, wget, git, tar, etc.   | 11    |
+| **Archive (Go)**      | Pure Go zip/unzip implementations         | 3     |
+| **Snapshot**          | Workspace export/import as ZIP archives   | 2     |
+| **Diff**              | File comparison and diff extraction       | 1     |
+| **Output**            | Save content, JSONL/CSV conversion        | 6     |
+| **URL Processing**    | URL deduplication, filtering, and parsing | 6     |
+| **Markdown**          | Markdown rendering and conversion         | 6     |
+| **Database**          | Asset/vuln import, queries, stats         | 50    |
+| **SARIF**             | SARIF parsing and database import         | 2     |
+| **Nmap/Port**         | Port scanning and result import           | 3     |
+| **Installer**         | Download packages via go-getter/Nix       | 4     |
+| **Environment**       | Environment variable operations           | 2     |
+| **Tmux**              | Background process management via tmux    | 5     |
+| **SSH/Sync**          | Remote execution and file sync            | 5     |
+| **Script Execution**  | Python and TypeScript execution           | 4     |
+| **Agent/Distributed** | ACP agents and distributed execution      | 3     |
+| **Module Control**    | Skip module and run modules/flows         | 3     |
+| **Authentication**    | Sudo authentication                       | 1     |
+
+## Best Practices
+
+1. **Use functions for conditions**
+   ```yaml theme={null}
+   pre_condition: 'file_exists("{{Output}}/input.txt")'
+   ```
+
+2. **Log meaningful messages**
+   ```yaml theme={null}
+   function: log_info("Found " + host_count + " hosts for {{Target}}")
+   ```
+
+3. **Export function results**
+   ```yaml theme={null}
+   exports:
+     line_count: "{{result}}"
+   ```
+
+4. **Handle missing files gracefully**
+   ```yaml theme={null}
+   pre_condition: 'file_exists("{{Output}}/data.txt")'
+   ```
+
+5. **Use appropriate logging levels**
+   * `log_debug` for verbose debugging
+   * `log_info` for informational messages
+   * `log_warn` for warnings
+   * `log_error` for errors
+
+6. **Leverage bulk processing for testing**
+   ```bash theme={null}
+   # Test a function against many targets
+   osmedeus func e 'http_get("https://" + target + "/api/health")' -T domains.txt -c 20
+   ```
+
+## Next Steps
+
+* [Functions Reference](reference) - Complete function list with signatures
+* [Control Flow](/workflows/control-flow) - Using conditions and decisions
+* [Variables](/workflows/variables) - Exports and parameters

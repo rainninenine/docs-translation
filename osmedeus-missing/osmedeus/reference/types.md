@@ -1,0 +1,196 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Type Reference
+
+> Complete reference for all type constants used in Osmedeus workflows
+
+# Type Reference
+
+This document provides a comprehensive reference for all type constants used in Osmedeus workflows.
+
+## WorkflowKind
+
+The `WorkflowKind` type defines the category of a workflow. Each workflow must declare exactly one kind.
+
+| Constant       | Value        | Description                                       |
+| -------------- | ------------ | ------------------------------------------------- |
+| `KindModule`   | `"module"`   | Single unit workflow containing steps             |
+| `KindFlow`     | `"flow"`     | Orchestrates multiple modules                     |
+| `KindFragment` | `"fragment"` | Reusable step collection for embedding in modules |
+
+### Helper Methods
+
+* `IsModule()` - Returns true if workflow is a module
+* `IsFlow()` - Returns true if workflow is a flow
+* `IsFragment()` - Returns true if workflow is a fragment
+
+## StepType
+
+The `StepType` type defines the execution behavior of a step within a module or fragment.
+
+| Constant               | Value              | Description                            |
+| ---------------------- | ------------------ | -------------------------------------- |
+| `StepTypeBash`         | `"bash"`           | Execute shell commands locally         |
+| `StepTypeFunction`     | `"function"`       | Execute utility functions              |
+| `StepTypeParallel`     | `"parallel-steps"` | Execute steps in parallel              |
+| `StepTypeForeach`      | `"foreach"`        | Iterate over input lines               |
+| `StepTypeRemoteBash`   | `"remote-bash"`    | Execute commands remotely (Docker/SSH) |
+| `StepTypeHTTP`         | `"http"`           | Make HTTP requests                     |
+| `StepTypeLLM`          | `"llm"`            | Interact with LLM APIs                 |
+| `StepTypeFragmentStep` | `"fragment-step"`  | Execute a fragment inline              |
+
+### Helper Methods
+
+* `IsBashStep()` - Returns true if step is bash type
+* `IsFunctionStep()` - Returns true if step is function type
+* `IsParallelStep()` - Returns true if step is parallel-steps type
+* `IsForeachStep()` - Returns true if step is foreach type
+* `IsRemoteBashStep()` - Returns true if step is remote-bash type
+* `IsHTTPStep()` - Returns true if step is http type
+* `IsLLMStep()` - Returns true if step is llm type
+* `IsFragmentStep()` - Returns true if step is fragment-step type
+
+## TriggerType
+
+The `TriggerType` type defines how workflows can be triggered.
+
+| Constant        | Value      | Description                             |
+| --------------- | ---------- | --------------------------------------- |
+| `TriggerCron`   | `"cron"`   | Scheduled execution via cron expression |
+| `TriggerEvent`  | `"event"`  | Triggered by system events              |
+| `TriggerWatch`  | `"watch"`  | Triggered by file system changes        |
+| `TriggerManual` | `"manual"` | Manual CLI execution                    |
+
+## RunnerType
+
+The `RunnerType` type defines the execution environment for steps.
+
+| Constant           | Value      | Description                        |
+| ------------------ | ---------- | ---------------------------------- |
+| `RunnerTypeHost`   | `"host"`   | Execute on local machine (default) |
+| `RunnerTypeDocker` | `"docker"` | Execute in Docker container        |
+| `RunnerTypeSSH`    | `"ssh"`    | Execute on remote machine via SSH  |
+
+## VariableType
+
+The `VariableType` type defines input validation for workflow parameters.
+
+| Constant           | Value         | Description          |
+| ------------------ | ------------- | -------------------- |
+| `VarTypeDomain`    | `"domain"`    | Valid domain name    |
+| `VarTypeSubdomain` | `"subdomain"` | Valid subdomain      |
+| `VarTypeURL`       | `"url"`       | Valid URL            |
+| `VarTypeCIDR`      | `"cidr"`      | Valid CIDR notation  |
+| `VarTypePath`      | `"path"`      | File system path     |
+| `VarTypeFile`      | `"file"`      | Existing file path   |
+| `VarTypeFolder`    | `"folder"`    | Existing folder path |
+| `VarTypeNumber`    | `"number"`    | Numeric value        |
+| `VarTypeString`    | `"string"`    | Any string value     |
+| `VarTypeRepo`      | `"repo"`      | Git repository URL   |
+
+## TargetType
+
+The `TargetType` type defines target input classification.
+
+| Constant              | Value         | Description             |
+| --------------------- | ------------- | ----------------------- |
+| `TargetTypeDomain`    | `"domain"`    | Domain name target      |
+| `TargetTypeSubdomain` | `"subdomain"` | Subdomain target        |
+| `TargetTypeURL`       | `"url"`       | URL target              |
+| `TargetTypeCIDR`      | `"cidr"`      | CIDR range target       |
+| `TargetTypeRepo`      | `"repo"`      | Git repository target   |
+| `TargetTypePath`      | `"path"`      | File system path target |
+| `TargetTypeFile`      | `"file"`      | File target             |
+| `TargetTypeFolder`    | `"folder"`    | Folder target           |
+| `TargetTypeNumber`    | `"number"`    | Numeric target          |
+| `TargetTypeString`    | `"string"`    | String target           |
+
+## ActionType
+
+The `ActionType` type defines handlers for `on_success` and `on_error` events.
+
+| Constant         | Value        | Description               |
+| ---------------- | ------------ | ------------------------- |
+| `ActionLog`      | `"log"`      | Log a message             |
+| `ActionAbort`    | `"abort"`    | Abort workflow execution  |
+| `ActionContinue` | `"continue"` | Continue despite error    |
+| `ActionExport`   | `"export"`   | Export a variable         |
+| `ActionRun`      | `"run"`      | Run a command or function |
+| `ActionNotify`   | `"notify"`   | Send notification         |
+
+## StepStatus
+
+The `StepStatus` type represents the execution state of a step.
+
+| Constant            | Value       | Description                 |
+| ------------------- | ----------- | --------------------------- |
+| `StepStatusPending` | `"pending"` | Step waiting to execute     |
+| `StepStatusRunning` | `"running"` | Step currently executing    |
+| `StepStatusSuccess` | `"success"` | Step completed successfully |
+| `StepStatusFailed`  | `"failed"`  | Step failed                 |
+| `StepStatusSkipped` | `"skipped"` | Step was skipped            |
+
+## RunStatus
+
+The `RunStatus` type represents the overall run state.
+
+| Constant             | Value         | Description                |
+| -------------------- | ------------- | -------------------------- |
+| `RunStatusPending`   | `"pending"`   | Run waiting to start       |
+| `RunStatusRunning`   | `"running"`   | Run in progress            |
+| `RunStatusCompleted` | `"completed"` | Run completed successfully |
+| `RunStatusFailed`    | `"failed"`    | Run failed                 |
+| `RunStatusCancelled` | `"cancelled"` | Run was cancelled          |
+| `RunStatusSkipped`   | `"skipped"`   | Run was skipped            |
+
+## Severity (Linter)
+
+The `Severity` type defines lint issue severity levels.
+
+| Constant          | Value | Description         |
+| ----------------- | ----- | ------------------- |
+| `SeverityInfo`    | `0`   | Informational issue |
+| `SeverityWarning` | `1`   | Warning issue       |
+| `SeverityError`   | `2`   | Error issue         |
+
+## OutputFormat (Linter)
+
+The `OutputFormat` type defines linter output formats.
+
+| Constant       | Value      | Description                          |
+| -------------- | ---------- | ------------------------------------ |
+| `FormatPretty` | `"pretty"` | Colored terminal output with context |
+| `FormatJSON`   | `"json"`   | Machine-readable JSON                |
+| `FormatGitHub` | `"github"` | GitHub Actions annotations           |
+
+## OverrideMode (Inheritance)
+
+The `OverrideMode` type defines merge strategies for workflow inheritance.
+
+| Constant              | Value       | Description                                          |
+| --------------------- | ----------- | ---------------------------------------------------- |
+| `OverrideModeReplace` | `"replace"` | Completely replace parent items with child items     |
+| `OverrideModePrepend` | `"prepend"` | Add child items before parent items                  |
+| `OverrideModeAppend`  | `"append"`  | Add child items after parent items (default)         |
+| `OverrideModeMerge`   | `"merge"`   | Match by name: replace, append new, remove specified |
+
+Used in the `override.steps.mode` and `override.modules.mode` fields when inheriting workflows.
+
+## Summary Table
+
+| Category      | Type           | Values                                                                                         |
+| ------------- | -------------- | ---------------------------------------------------------------------------------------------- |
+| Workflow      | `WorkflowKind` | `module`, `flow`, `fragment`                                                                   |
+| Step          | `StepType`     | `bash`, `function`, `parallel-steps`, `foreach`, `remote-bash`, `http`, `llm`, `fragment-step` |
+| Trigger       | `TriggerType`  | `cron`, `event`, `watch`, `manual`                                                             |
+| Runner        | `RunnerType`   | `host`, `docker`, `ssh`                                                                        |
+| Variable      | `VariableType` | `domain`, `subdomain`, `url`, `cidr`, `path`, `file`, `folder`, `number`, `string`, `repo`     |
+| Target        | `TargetType`   | `domain`, `subdomain`, `url`, `cidr`, `repo`, `path`, `file`, `folder`, `number`, `string`     |
+| Action        | `ActionType`   | `log`, `abort`, `continue`, `export`, `run`, `notify`                                          |
+| Status        | `StepStatus`   | `pending`, `running`, `success`, `failed`, `skipped`                                           |
+| Run           | `RunStatus`    | `pending`, `running`, `completed`, `failed`, `cancelled`, `skipped`                            |
+| Lint Severity | `Severity`     | `info`, `warning`, `error`                                                                     |
+| Lint Format   | `OutputFormat` | `pretty`, `json`, `github`                                                                     |
+| Override      | `OverrideMode` | `replace`, `prepend`, `append`, `merge`                                                        |

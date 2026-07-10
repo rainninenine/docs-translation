@@ -1,0 +1,462 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Workflow Overview
+
+> Introduction to workflow structure and concepts
+
+Workflows are YAML files that define automated scanning pipelines.
+
+## Basic Structure
+
+### Module
+
+```yaml theme={null}
+kind: module                    # Type: module or flow
+name: my-workflow               # Unique workflow name
+description: What it does       # Human-readable description
+tags:                           # Optional categorization
+  - reconnaissance
+  - subdomain
+
+params:                         # Input parameters
+  - name: target
+    required: true
+
+runner: host                    # Execution environment
+runner_config: {}               # Runner options
+
+triggers:                        # Scheduling options
+  - name: daily
+    on: cron
+    schedule: "0 2 * * *"
+
+steps:                          # Execution steps
+  - name: step-one
+    type: bash
+    command: echo "Hello"
+```
+
+### Flow
+
+```yaml theme={null}
+kind: flow
+name: my-pipeline
+description: Multi-module pipeline
+
+params:
+  - name: target
+    required: true
+
+modules:                        # Module references
+  - name: recon
+    path: modules/recon.yaml
+  - name: scan
+    path: modules/scan.yaml
+    depends_on: [recon]
+```
+
+## Field Reference
+
+### Top-Level Fields
+
+| Field           | Required | Description                                   |
+| --------------- | -------- | --------------------------------------------- |
+| `kind`          | Yes      | `module` or `flow`                            |
+| `name`          | Yes      | Unique workflow identifier                    |
+| `description`   | No       | Human-readable description                    |
+| `tags`          | No       | Array of category tags                        |
+| `params`        | No       | Input parameter definitions                   |
+| `runner`        | No       | Default runner type (`host`, `docker`, `ssh`) |
+| `runner_config` | No       | Runner configuration object                   |
+| `trigger`       | No       | Scheduling trigger definitions                |
+| `steps`         | Module   | List of execution steps                       |
+| `modules`       | Flow     | List of module references                     |
+
+### Parameters
+
+```yaml theme={null}
+params:
+  - name: target              # Parameter name (required)
+    required: true            # Must be provided (default: false)
+    default: ""               # Default value
+    description: Target domain
+```
+
+Use in templates as `{{target}}`.
+
+### Tags
+
+```yaml theme={null}
+tags:
+  - reconnaissance
+  - subdomain
+  - passive
+```
+
+Filter workflows:
+
+```bash theme={null}
+osmedeus workflow list --tags reconnaissance
+```
+
+## Workflow Kinds
+
+### Module Workflows
+
+For single, focused tasks:
+
+```yaml theme={null}
+kind: module
+name: subdomain-enum
+
+params:
+  - name: target
+    required: true
+
+steps:
+  - name: subfinder
+    type: bash
+    command: subfinder -d {{target}} -o {{Output}}/subs.txt
+
+  - name: amass
+    type: bash
+    command: amass enum -passive -d {{target}} >> {{Output}}/subs.txt
+
+  - name: dedupe
+    type: bash
+    command: sort -u {{Output}}/subs.txt -o {{Output}}/subdomains.txt
+```
+
+### Flow Workflows
+
+For multi-stage pipelines:
+
+```yaml theme={null}
+kind: flow
+name: full-recon
+
+params:
+  - name: target
+    required: true
+
+modules:
+  - name: subdomain-enum
+    path: modules/subdomain-enum.yaml
+
+  - name: http-probe
+    path: modules/http-probe.yaml
+    depends_on: [subdomain-enum]
+
+  - name: screenshot
+    path: modules/screenshot.yaml
+    depends_on: [http-probe]
+    condition: 'fileLength("{{Output}}/live.txt") > 0'
+```
+
+## Module References (Flows)
+
+```yaml theme={null}
+modules:
+  - name: module-name          # Reference name
+    path: modules/file.yaml    # Path to module YAML
+    depends_on: [dep1, dep2]   # Wait for these modules
+    condition: 'expression'    # Skip if false
+    params:                    # Override parameters
+      key: value
+```
+
+## Workflow Location
+
+Store workflows in the workflow folder (default: `~/osmedeus-base/workflows/`):
+
+```
+workflows/
+├── modules/
+│   ├── subdomain-enum.yaml
+│   ├── http-probe.yaml
+│   └── nuclei-scan.yaml
+└── flows/
+    ├── basic-recon.yaml
+    └── full-assessment.yaml
+```
+
+## Running Workflows
+
+```bash theme={null}
+# Run a module
+osmedeus run -m subdomain-enum -t example.com
+
+# Run a flow
+osmedeus run -f full-recon -t example.com
+
+# List available workflows
+osmedeus workflow list
+
+# Show workflow details
+osmedeus workflow show subdomain-enum
+
+# Validate workflow
+osmedeus workflow validate subdomain-enum
+```
+
+## Validation and Linting
+
+### Parser Validation
+
+The parser validates:
+
+1. **Required fields**: `kind`, `name`, `steps` (module) or `modules` (flow)
+2. **Valid kind**: Must be `module` or `flow`
+3. **Step names**: Each step must have a unique name
+4. **Step types**: Must be valid (bash, function, foreach, parallel-steps, remote-bash, http, llm, agent)
+5. **Module paths**: Referenced modules must exist (flows)
+6. **Circular dependencies**: No cycles in dependency graph (flows)
+
+### Workflow Linter
+
+The workflow linter provides additional best-practice checks beyond basic parsing. It helps catch potential issues before runtime while allowing workflows to execute even with warnings.
+
+```bash theme={null}
+# Lint workflows
+osmedeus workflow lint my-workflow.yaml
+osmedeus workflow lint my-workflow              # By name
+osmedeus workflow lint /path/to/workflows/      # Directory
+
+# Output formats
+osmedeus workflow lint workflow.yaml --format pretty   # Default
+osmedeus workflow lint workflow.yaml --format json     # Machine-readable
+osmedeus workflow lint workflow.yaml --format github   # CI annotations
+
+# Filter by severity
+osmedeus workflow lint workflow.yaml --severity info     # All issues (default)
+osmedeus workflow lint workflow.yaml --severity warning  # Warnings and errors
+osmedeus workflow lint workflow.yaml --severity error    # Errors only
+
+# Disable specific rules
+osmedeus workflow lint workflow.yaml --disable unused-variable
+
+# CI mode (exit code 1 if errors)
+osmedeus workflow lint workflow.yaml --check
+```
+
+### Linter Rules Reference
+
+| Rule                     | Severity | Description                        |
+| ------------------------ | -------- | ---------------------------------- |
+| `missing-required-field` | warning  | Missing name, kind, or type fields |
+| `duplicate-step-name`    | warning  | Multiple steps with same name      |
+| `empty-step`             | warning  | Steps with no executable content   |
+| `unused-variable`        | info     | Exports never referenced           |
+| `invalid-goto`           | warning  | Decision goto to non-existent step |
+| `invalid-depends-on`     | warning  | Dependency on non-existent step    |
+| `circular-dependency`    | warning  | Circular step dependencies         |
+
+<Note>
+  The `undefined-variable` rule exists but is not enabled by default due to the large number of built-in variables. Workflows can execute with linter warnings - the linter is designed to help identify potential issues, not block execution.
+</Note>
+
+### Severity Levels
+
+* **info** - Best practice suggestions (e.g., unused exports)
+* **warning** - Potential issues that may cause problems (e.g., duplicate names)
+* **error** - Critical issues that will likely cause failures
+
+## Workflow Inheritance
+
+Workflows can extend parent workflows using the `extends` field. This enables:
+
+* Reusing common configurations across workflows
+* Creating specialized variants (e.g., fast, aggressive, stealth)
+* Maintaining consistent base workflows with targeted overrides
+
+### Basic Inheritance
+
+```yaml theme={null}
+kind: module
+name: subdomain-enum-fast
+extends: subdomain-enum-base
+
+# Override description
+description: "Fast subdomain enumeration (reduced timeout)"
+
+# Override section specifies what to change
+override:
+  params:
+    threads:
+      default: 50
+    timeout:
+      default: "10m"
+```
+
+### Extends Field
+
+The `extends` field specifies the parent workflow to inherit from:
+
+```yaml theme={null}
+extends: parent-workflow-name     # By name (same directory)
+extends: ./parent.yaml            # By relative path
+extends: modules/base-module.yaml # By path from workflow directory
+```
+
+The child workflow inherits all fields from the parent, with the child's fields taking precedence.
+
+### Override Modes
+
+When overriding steps (modules) or modules (flows), you can specify a merge strategy:
+
+| Mode      | Description                                                   |
+| --------- | ------------------------------------------------------------- |
+| `replace` | Completely replace parent items with child items              |
+| `prepend` | Add child items before parent items                           |
+| `append`  | Add child items after parent items (default)                  |
+| `merge`   | Match by name: replace matching, append new, remove specified |
+
+#### Append Mode (Default)
+
+```yaml theme={null}
+kind: module
+name: extended-enum
+extends: base-enum
+
+override:
+  steps:
+    mode: append
+    steps:
+      - name: additional-step
+        type: bash
+        command: "extra-tool -t {{Target}}"
+```
+
+#### Prepend Mode
+
+```yaml theme={null}
+override:
+  steps:
+    mode: prepend
+    steps:
+      - name: setup-step
+        type: bash
+        command: "setup-tool"
+```
+
+#### Replace Mode
+
+```yaml theme={null}
+override:
+  steps:
+    mode: replace
+    steps:
+      - name: only-step
+        type: bash
+        command: "completely-different-tool"
+```
+
+#### Merge Mode
+
+```yaml theme={null}
+override:
+  steps:
+    mode: merge
+    # Replace existing step by name
+    replace:
+      - name: subfinder
+        type: bash
+        command: "subfinder -d {{Target}} --all -o {{Output}}/subfinder.txt"
+    # Remove steps by name
+    remove:
+      - amass-passive
+    # Append new steps
+    steps:
+      - name: new-tool
+        type: bash
+        command: "new-tool -t {{Target}}"
+```
+
+### Override Sections
+
+The `override` block supports these sections:
+
+| Section         | Description                                            |
+| --------------- | ------------------------------------------------------ |
+| `params`        | Override parameter defaults, types, or required status |
+| `steps`         | Override steps (module workflows only)                 |
+| `modules`       | Override modules (flow workflows only)                 |
+| `triggers`      | Replace parent triggers entirely                       |
+| `dependencies`  | Merge with parent dependencies                         |
+| `preferences`   | Override execution preferences                         |
+| `runner_config` | Override runner configuration                          |
+| `runner`        | Override runner type                                   |
+
+### Parameter Overrides
+
+Override specific parameter properties:
+
+```yaml theme={null}
+override:
+  params:
+    threads:
+      default: 50           # Override default value
+    wordlist:
+      default: "{{Data}}/fast-wordlist.txt"
+    new_param:              # Add new parameter
+      default: "value"
+      required: false
+```
+
+### Multi-Level Inheritance
+
+Workflows can form inheritance chains:
+
+```yaml theme={null}
+# base.yaml
+kind: module
+name: scan-base
+steps:
+  - name: common-step
+    type: bash
+    command: "common-tool"
+
+# fast.yaml
+kind: module
+name: scan-fast
+extends: scan-base
+override:
+  params:
+    threads:
+      default: 100
+
+# aggressive-fast.yaml
+kind: module
+name: scan-aggressive-fast
+extends: scan-fast
+override:
+  params:
+    rate_limit:
+      default: 1000
+```
+
+### Inheritance Rules
+
+1. **Kind must match** - Child and parent must have the same `kind` (module/flow)
+2. **Circular detection** - Circular inheritance chains are detected and rejected
+3. **Name uniqueness** - Child's `name` overrides parent's name
+4. **File path** - Child's `FilePath` is preserved (for error reporting)
+
+## Best Practices
+
+1. **One task per module** - Keep modules focused
+2. **Use flows for pipelines** - Orchestrate with dependencies
+3. **Descriptive names** - `subdomain-enum` not `step1`
+4. **Document parameters** - Add descriptions
+5. **Use tags** - Enable filtering
+6. **Use inheritance** - Create base workflows and specialized variants
+7. **Prefer merge mode** - For fine-grained step control in child workflows
+
+## Next Steps
+
+* [Step Types](step-types) - All step types
+* [Flows](flows) - Module orchestration
+* [Variables](variables) - Parameters and exports
+* [Control Flow](control-flow) - Conditions and routing

@@ -1,0 +1,1083 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# LLM & Agents Integration
+
+AI-powered workflow steps using Large Language Models.
+
+## Overview
+
+Osmedeus provides three step types for LLM integration:
+
+* **`llm`** — Single-shot LLM calls: chat completions, tool calling, embeddings, multimodal content, structured outputs
+* **`agent`** — Agentic execution loop: iterative tool calling, sub-agents, memory management, planning stages, multi-goal execution
+* **`agent-acp`** — External AI agent execution via the [Agent Communication Protocol (ACP)](https://github.com/anthropics/agent-communication-protocol): delegates to real agent binaries (Claude Code, Codex, OpenCode, Gemini)
+
+## Configuration
+
+### Settings
+
+In `osm-settings.yaml`, configure one or more providers under `llm_providers`. Providers are rotated automatically across requests:
+
+```yaml theme={null}
+llm:
+  llm_providers:
+    - provider: openai
+      base_url: "https://api.openai.com/v1"
+      auth_token: "sk-..."
+      model: gpt-4
+    - provider: anthropic
+      base_url: "https://api.anthropic.com/v1"
+      auth_token: "sk-ant-..."
+      model: claude-3-opus
+  max_tokens: 4096
+  temperature: 0.7
+  stream: false
+```
+
+### Environment Variables
+
+Environment variables override settings for the default provider:
+
+```bash theme={null}
+export OSM_LLM_BASE_URL=https://api.openai.com/v1
+export OSM_LLM_AUTH_TOKEN=sk-...
+export OSM_LLM_MODEL=gpt-4
+```
+
+## Chat Completion
+
+### Basic Usage
+
+```yaml theme={null}
+- name: analyze-results
+  type: llm
+  messages:
+    - role: system
+      content: You are a security analyst. Analyze findings concisely.
+    - role: user
+      content: |
+        Analyze these vulnerabilities:
+        {{readFile("{{Output}}/vulns.txt")}}
+  exports:
+    analysis: "{{analyze_results_content}}"
+```
+
+<Note>
+  Export variables are based on the **sanitized step name** (hyphens replaced with underscores).
+  A step named `analyze-results` produces exports `analyze_results_llm_resp` (full response object) and `analyze_results_content` (text content only).
+</Note>
+
+### Message Roles
+
+| Role        | Description          |
+| ----------- | -------------------- |
+| `system`    | System instructions  |
+| `user`      | User input           |
+| `assistant` | Previous AI response |
+| `tool`      | Tool call result     |
+
+### Multi-turn Conversation
+
+```yaml theme={null}
+- name: chat
+  type: llm
+  messages:
+    - role: system
+      content: You are a helpful security assistant.
+    - role: user
+      content: What is SQL injection?
+    - role: assistant
+      content: SQL injection is a code injection technique...
+    - role: user
+      content: How do I prevent it in Python?
+```
+
+## Tool Calling
+
+### Define Tools
+
+```yaml theme={null}
+- name: intelligent-scan
+  type: llm
+  messages:
+    - role: system
+      content: You are a security scanner. Use tools to analyze targets.
+    - role: user
+      content: Analyze {{target}} for security issues.
+  tools:
+    - type: function
+      function:
+        name: port_scan
+        description: Scan ports on a target
+        parameters:
+          type: object
+          properties:
+            target:
+              type: string
+              description: Target IP or hostname
+            ports:
+              type: string
+              description: Port range (e.g., "1-1000")
+          required: ["target"]
+
+    - type: function
+      function:
+        name: vulnerability_scan
+        description: Run vulnerability scan
+        parameters:
+          type: object
+          properties:
+            target:
+              type: string
+            templates:
+              type: string
+              enum: ["cves", "misconfigurations", "exposures"]
+          required: ["target"]
+```
+
+### Handle Tool Calls
+
+Tool calls are exported within the `_llm_resp` object:
+
+```yaml theme={null}
+- name: ai-scan
+  type: llm
+  messages:
+    - role: user
+      content: Scan {{target}}
+  tools:
+    - type: function
+      function:
+        name: scan
+        parameters: { ... }
+  exports:
+    full_response: "{{ai_scan_llm_resp}}"
+
+- name: execute-tool
+  type: function
+  pre_condition: '{{full_response}} != ""'
+  function: |
+    // Parse and execute tool calls
+    executeToolCalls("{{full_response}}")
+```
+
+## Embeddings
+
+### Generate Embeddings
+
+```yaml theme={null}
+- name: embed-findings
+  type: llm
+  is_embedding: true
+  embedding_input:
+    - "SQL injection in login form"
+    - "Cross-site scripting in search"
+    - "Insecure direct object reference"
+  exports:
+    embeddings: "{{embed_findings_llm_resp}}"
+```
+
+### Use with Files
+
+```yaml theme={null}
+- name: embed-vulns
+  type: llm
+  is_embedding: true
+  embedding_input: "{{readLines('{{Output}}/vulns.txt')}}"
+  exports:
+    vuln_embeddings: "{{embed_vulns_llm_resp}}"
+```
+
+## Structured Output
+
+### JSON Schema
+
+```yaml theme={null}
+- name: extract-findings
+  type: llm
+  messages:
+    - role: user
+      content: |
+        Extract vulnerabilities from this report:
+        {{readFile("{{Output}}/scan-report.txt")}}
+  response_format:
+    type: json_schema
+    json_schema:
+      name: vulnerabilities
+      schema:
+        type: object
+        properties:
+          findings:
+            type: array
+            items:
+              type: object
+              properties:
+                title:
+                  type: string
+                severity:
+                  type: string
+                  enum: ["critical", "high", "medium", "low"]
+                description:
+                  type: string
+        required: ["findings"]
+  exports:
+    structured_findings: "{{extract_findings_content}}"
+```
+
+## Configuration Override
+
+### Per-Step Config
+
+```yaml theme={null}
+- name: local-analysis
+  type: llm
+  llm_config:
+    provider: ollama
+    model: llama2
+    max_tokens: 2048
+    temperature: 0.5
+    stream: true
+  messages:
+    - role: user
+      content: Analyze {{target}}
+```
+
+### Extra Parameters
+
+```yaml theme={null}
+- name: creative-analysis
+  type: llm
+  messages:
+    - role: user
+      content: Write a security assessment for {{target}}
+  extra_llm_parameters:
+    temperature: 0.9
+    top_p: 0.95
+    frequency_penalty: 0.5
+```
+
+## Multimodal Content
+
+### Image Analysis
+
+```yaml theme={null}
+- name: analyze-screenshot
+  type: llm
+  messages:
+    - role: user
+      content:
+        - type: text
+          text: Analyze this screenshot for security issues.
+        - type: image_url
+          image_url:
+            url: "file://{{Output}}/screenshot.png"
+```
+
+## Streaming
+
+Both `llm` and `agent` steps support streaming output via the `stream` field:
+
+```yaml theme={null}
+- name: stream-analysis
+  type: llm
+  stream: true
+  messages:
+    - role: user
+      content: Analyze {{target}} in detail.
+```
+
+The `stream` field overrides both `llm_config.stream` and the global config setting.
+
+***
+
+## Agent Step Type
+
+The `agent` step type provides an **agentic LLM execution loop** — the LLM iteratively calls tools, processes results, and reasons until completion. This is fundamentally different from the single-shot `llm` step.
+
+### Basic Agent
+
+```yaml theme={null}
+- name: recon-agent
+  type: agent
+  query: "Enumerate subdomains of {{Target}} and identify interesting services."
+  system_prompt: "You are an expert security reconnaissance agent."
+  max_iterations: 15
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+    - preset: save_content
+  exports:
+    findings: "{{agent_content}}"
+```
+
+| Field            | Type            | Required | Description                                        |
+| ---------------- | --------------- | -------- | -------------------------------------------------- |
+| `query`          | string          | Yes\*    | The task prompt for the agent                      |
+| `queries`        | string\[]       | Yes\*    | Multiple goals executed sequentially               |
+| `system_prompt`  | string          | No       | System prompt for the agent                        |
+| `max_iterations` | int             | Yes      | Maximum tool-calling loop iterations (must be > 0) |
+| `agent_tools`    | AgentToolDef\[] | No       | Tools available to the agent                       |
+
+<Note>Either `query` (single goal) or `queries` (multi-goal) is required, not both.</Note>
+
+### Preset Tools
+
+Preset tools reference built-in osmedeus functions with auto-generated schemas:
+
+```yaml theme={null}
+agent_tools:
+  - preset: bash
+  - preset: read_file
+  - preset: grep_regex
+```
+
+| Preset             | Description                                                   |
+| ------------------ | ------------------------------------------------------------- |
+| `bash`             | Execute a shell command and return its output                 |
+| `read_file`        | Read the contents of a file                                   |
+| `read_lines`       | Read a file and return its contents as an array of lines      |
+| `file_exists`      | Check if a file exists at the given path                      |
+| `file_length`      | Count the number of non-empty lines in a file                 |
+| `append_file`      | Append content from source file to destination file           |
+| `save_content`     | Write string content to a file (overwrites if exists)         |
+| `glob`             | Find files matching a glob pattern                            |
+| `grep_string`      | Search a file for lines containing a string                   |
+| `grep_regex`       | Search a file for lines matching a regex pattern              |
+| `http_get`         | Make an HTTP GET request and return the response              |
+| `http_request`     | Make an HTTP request with specified method, headers, and body |
+| `jq`               | Query JSON data using jq expression syntax                    |
+| `exec_python`      | Run inline Python code and return stdout                      |
+| `exec_python_file` | Run a Python file and return stdout                           |
+| `exec_ts`          | Run inline TypeScript code via bun and return stdout          |
+| `exec_ts_file`     | Run a TypeScript file via bun and return stdout               |
+| `run_module`       | Run an osmedeus module as a subprocess                        |
+| `run_flow`         | Run an osmedeus flow as a subprocess                          |
+
+### Custom Tools
+
+Define custom tools with explicit schemas and JavaScript handlers:
+
+```yaml theme={null}
+agent_tools:
+  - preset: bash
+  - name: check_port
+    description: "Check if a port is open on a host"
+    parameters:
+      type: object
+      properties:
+        host:
+          type: string
+          description: "Target hostname or IP"
+        port:
+          type: integer
+          description: "Port number to check"
+      required: ["host", "port"]
+    handler: |
+      exec("nc -zv -w3 " + args.host + " " + args.port)
+```
+
+The `handler` is a JavaScript expression. The parsed tool call arguments are available as the `args` object.
+
+### Multi-Goal Execution
+
+Use `queries` to run the agent through multiple goals sequentially. Each goal is executed in order, and all results are collected:
+
+```yaml theme={null}
+- name: full-recon
+  type: agent
+  queries:
+    - "Discover all subdomains of {{Target}}"
+    - "Identify web services running on discovered subdomains"
+    - "Check for common misconfigurations on each service"
+  system_prompt: "You are a thorough security auditor."
+  max_iterations: 20
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+    - preset: save_content
+  exports:
+    all_results: "{{agent_goal_results}}"
+    final_output: "{{agent_content}}"
+```
+
+The `agent_goal_results` export contains results from all goals as a JSON array.
+
+### Planning Stage
+
+Add a planning phase before the main execution loop. The agent first generates a plan, then executes it:
+
+```yaml theme={null}
+- name: planned-scan
+  type: agent
+  query: "Perform a comprehensive security assessment of {{Target}}"
+  plan_prompt: |
+    Create a step-by-step plan for assessing {{Target}}.
+    Consider: subdomain enumeration, service detection, vulnerability scanning.
+  plan_max_tokens: 1000
+  max_iterations: 25
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+    - preset: save_content
+  exports:
+    plan: "{{agent_plan}}"
+    results: "{{agent_content}}"
+```
+
+| Field             | Type   | Description                                                               |
+| ----------------- | ------ | ------------------------------------------------------------------------- |
+| `plan_prompt`     | string | Prompt for the planning phase (triggers plan generation before main loop) |
+| `plan_max_tokens` | int    | Max tokens for the plan response                                          |
+
+### Memory Management
+
+Control conversation context size for long-running agents:
+
+```yaml theme={null}
+- name: long-running-agent
+  type: agent
+  query: "Perform deep reconnaissance on {{Target}}"
+  max_iterations: 50
+  memory:
+    max_messages: 30
+    summarize_on_truncate: true
+    persist_path: "{{Output}}/agent/conversation.json"
+    resume_path: "{{Output}}/agent/conversation.json"
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+    - preset: save_content
+```
+
+| Field                   | Type   | Default       | Description                                                               |
+| ----------------------- | ------ | ------------- | ------------------------------------------------------------------------- |
+| `max_messages`          | int    | 0 (unlimited) | Sliding window size; oldest non-system messages are dropped when exceeded |
+| `summarize_on_truncate` | bool   | false         | Use LLM to summarize dropped messages instead of silently discarding them |
+| `persist_path`          | string | —             | Save conversation JSON after completion                                   |
+| `resume_path`           | string | —             | Load a prior conversation on start (enables continuation across runs)     |
+
+### Model Preferences
+
+Specify preferred models tried in order. Falls back to the default provider config if none are available:
+
+```yaml theme={null}
+- name: smart-agent
+  type: agent
+  query: "Analyze complex target architecture for {{Target}}"
+  max_iterations: 10
+  models:
+    - claude-3-opus
+    - gpt-4
+    - claude-3-sonnet
+  agent_tools:
+    - preset: bash
+```
+
+### Structured Output (Agent)
+
+Enforce a JSON schema on the agent's final output using `output_schema`:
+
+```yaml theme={null}
+- name: structured-agent
+  type: agent
+  query: "Find all open ports and services on {{Target}}"
+  max_iterations: 15
+  output_schema: '{"type":"object","properties":{"ports":{"type":"array","items":{"type":"object","properties":{"port":{"type":"integer"},"service":{"type":"string"},"version":{"type":"string"}}}},"summary":{"type":"string"}},"required":["ports","summary"]}'
+  agent_tools:
+    - preset: bash
+    - preset: save_content
+  exports:
+    structured_results: "{{agent_content}}"
+```
+
+The schema is enforced on the final iteration via the OpenAI `response_format` parameter.
+
+### Sub-Agents
+
+Define inline sub-agents that the parent agent can spawn via the auto-generated `spawn_agent` tool:
+
+```yaml theme={null}
+- name: coordinator
+  type: agent
+  query: "Assess {{Target}} using specialized sub-agents for each phase."
+  system_prompt: "You are a coordinator agent. Delegate tasks to specialized sub-agents."
+  max_iterations: 10
+  max_agent_depth: 3
+  agent_tools:
+    - preset: read_file
+    - preset: save_content
+  sub_agents:
+    - name: subdomain-scanner
+      description: "Discovers subdomains for a target domain"
+      system_prompt: "You are a subdomain enumeration specialist."
+      max_iterations: 10
+      agent_tools:
+        - preset: bash
+        - preset: save_content
+
+    - name: vuln-checker
+      description: "Checks for vulnerabilities on discovered services"
+      system_prompt: "You are a vulnerability assessment specialist."
+      max_iterations: 10
+      agent_tools:
+        - preset: bash
+        - preset: read_file
+      output_schema: '{"type":"object","properties":{"vulnerabilities":{"type":"array"}}}'
+  exports:
+    assessment: "{{agent_content}}"
+```
+
+When `sub_agents` is defined, a `spawn_agent` tool is automatically added with parameters:
+
+* `agent` — Name of the sub-agent to spawn (from the defined list)
+* `query` — The task to delegate
+
+Sub-agents support recursive nesting (sub-agents can define their own `sub_agents`). Use `max_agent_depth` to control nesting depth (default: 3).
+
+### Stop Condition
+
+A JavaScript expression evaluated after each iteration. If it returns `true`, the agent stops:
+
+```yaml theme={null}
+- name: targeted-scan
+  type: agent
+  query: "Find the admin panel for {{Target}}"
+  max_iterations: 20
+  stop_condition: 'agent_content.includes("admin") && iteration > 3'
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+```
+
+Available variables in the expression: `agent_content` (current response text), `iteration` (current iteration number).
+
+### Tool Tracing Hooks
+
+JavaScript expressions executed before and after each tool call for logging or debugging:
+
+```yaml theme={null}
+- name: traced-agent
+  type: agent
+  query: "Scan {{Target}}"
+  max_iterations: 10
+  on_tool_start: 'log_info("Calling tool: " + tool_name + " with: " + tool_args)'
+  on_tool_end: 'log_info("Tool " + tool_name + " returned: " + tool_result.substring(0, 200))'
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+```
+
+| Hook            | Available Variables                     |
+| --------------- | --------------------------------------- |
+| `on_tool_start` | `tool_name`, `tool_args`                |
+| `on_tool_end`   | `tool_name`, `tool_args`, `tool_result` |
+
+### Parallel Tool Calls
+
+By default, agents allow the LLM to make multiple tool calls in parallel. Disable this for sequential execution:
+
+```yaml theme={null}
+- name: sequential-agent
+  type: agent
+  query: "Carefully test {{Target}} one step at a time"
+  max_iterations: 10
+  parallel_tool_calls: false
+  agent_tools:
+    - preset: bash
+```
+
+### Agent Exports
+
+All exports available from agent steps:
+
+| Export                    | Type   | Description                                     |
+| ------------------------- | ------ | ----------------------------------------------- |
+| `agent_content`           | string | Final text response from the agent              |
+| `agent_history`           | JSON   | Full conversation history                       |
+| `agent_iterations`        | int    | Number of iterations executed                   |
+| `agent_total_tokens`      | int    | Total tokens consumed                           |
+| `agent_prompt_tokens`     | int    | Prompt tokens consumed                          |
+| `agent_completion_tokens` | int    | Completion tokens consumed                      |
+| `agent_tool_results`      | JSON   | All tool call results                           |
+| `agent_plan`              | string | Plan content (when `plan_prompt` is used)       |
+| `agent_goal_results`      | JSON   | Results from each goal (when `queries` is used) |
+
+```yaml theme={null}
+exports:
+  report: "{{agent_content}}"
+  history: "{{agent_history}}"
+  stats: "{{agent_iterations}}"
+  plan: "{{agent_plan}}"
+```
+
+***
+
+## Agent-ACP Step Type
+
+The `agent-acp` step type spawns an **external AI coding agent as a subprocess** and communicates via the [Agent Communication Protocol (ACP)](https://github.com/anthropics/agent-communication-protocol). Unlike the `agent` step type (which uses Osmedeus's internal LLM loop), `agent-acp` delegates to real agent binaries like Claude Code, Codex, OpenCode, or Gemini.
+
+### Basic Agent-ACP
+
+```yaml theme={null}
+- name: analyze-target
+  type: agent-acp
+  agent: claude-code
+  messages:
+    - role: user
+      content: "Analyze the scan results in {{Output}} and create a summary report."
+  exports:
+    analysis: "{{acp_output}}"
+```
+
+### Built-in Agents
+
+Four agents are available out of the box:
+
+| Agent Name    | Command                                         | Description                   |
+| ------------- | ----------------------------------------------- | ----------------------------- |
+| `claude-code` | `npx -y @zed-industries/claude-code-acp@latest` | Anthropic's Claude Code agent |
+| `codex`       | `npx -y @zed-industries/codex-acp`              | OpenAI Codex agent            |
+| `opencode`    | `opencode acp`                                  | OpenCode agent                |
+| `gemini`      | `gemini --experimental-acp`                     | Google Gemini agent           |
+
+List available agents from the CLI:
+
+```bash theme={null}
+osmedeus agent --list
+```
+
+### Configuration Fields
+
+| Field           | Type      | Required | Description                                     |
+| --------------- | --------- | -------- | ----------------------------------------------- |
+| `agent`         | string    | Yes\*    | Built-in agent name (see table above)           |
+| `messages`      | array     | Yes      | Conversation messages with `role` and `content` |
+| `cwd`           | string    | No       | Working directory for the ACP session           |
+| `allowed_paths` | string\[] | No       | Restrict file reads to these directories        |
+| `acp_config`    | object    | No       | Custom ACP configuration (see below)            |
+
+<Note>`agent` is required unless `acp_config.command` is provided to specify a custom agent binary.</Note>
+
+### ACP Config
+
+Override the built-in agent or customize execution:
+
+```yaml theme={null}
+acp_config:
+  command: /path/to/custom-agent     # Custom agent binary (overrides built-in)
+  args:                               # Custom command arguments
+    - --flag1
+    - value1
+  env:                                # Environment variables for the agent process
+    CUSTOM_VAR: "value"
+    TARGET_DOMAIN: "{{Target}}"
+  write_enabled: true                 # Allow agent to write files (default: false)
+```
+
+| Field           | Type      | Default | Description                                                |
+| --------------- | --------- | ------- | ---------------------------------------------------------- |
+| `command`       | string    | —       | Custom agent command (overrides built-in registry)         |
+| `args`          | string\[] | —       | Custom command arguments                                   |
+| `env`           | map       | —       | Extra environment variables (values are template-rendered) |
+| `write_enabled` | bool      | `false` | Allow the agent to write files                             |
+
+### Full Configuration Example
+
+```yaml theme={null}
+- name: security-analysis
+  type: agent-acp
+  agent: claude-code
+  cwd: "{{Output}}"
+  allowed_paths:
+    - "{{Output}}"
+    - "/tmp"
+  acp_config:
+    env:
+      TARGET_DOMAIN: "{{Target}}"
+    write_enabled: true
+  messages:
+    - role: system
+      content: "You are a security analyst. Analyze scan results and produce actionable findings."
+    - role: user
+      content: |
+        Review the scan results in {{Output}} for {{Target}}.
+        Create a prioritized summary of findings.
+  exports:
+    analysis: "{{acp_output}}"
+    agent_name: "{{acp_agent}}"
+```
+
+### Custom Agent
+
+Use `acp_config.command` to run any ACP-compatible agent binary:
+
+```yaml theme={null}
+- name: custom-agent
+  type: agent-acp
+  acp_config:
+    command: /usr/local/bin/my-agent
+    args:
+      - --mode
+      - security
+    env:
+      API_KEY: "{{env_api_key}}"
+    write_enabled: true
+  messages:
+    - role: user
+      content: "Perform analysis on {{Target}}"
+  exports:
+    result: "{{acp_output}}"
+```
+
+### Agent-ACP Exports
+
+| Export       | Type   | Description                                   |
+| ------------ | ------ | --------------------------------------------- |
+| `acp_output` | string | Collected stdout from the agent (main output) |
+| `acp_stderr` | string | Collected stderr from the agent process       |
+| `acp_agent`  | string | Name/command of the agent that ran            |
+
+```yaml theme={null}
+exports:
+  result: "{{acp_output}}"
+  errors: "{{acp_stderr}}"
+  agent: "{{acp_agent}}"
+```
+
+### Agent CLI Command
+
+Run an ACP agent interactively from the terminal:
+
+```bash theme={null}
+# Run with claude-code (default)
+osmedeus agent "Summarize the code in this directory"
+
+# Use a specific agent
+osmedeus agent --agent codex "Explain what this project does"
+
+# Set working directory and timeout
+osmedeus agent --cwd /path/to/project --timeout 1h "Review the code"
+
+# Read from stdin
+echo "Analyze this codebase" | osmedeus agent --stdin
+cat prompt.txt | osmedeus agent -
+
+# List available agents
+osmedeus agent --list
+```
+
+| Flag        | Type   | Default       | Description                                   |
+| ----------- | ------ | ------------- | --------------------------------------------- |
+| `--agent`   | string | `claude-code` | Agent name to use                             |
+| `--cwd`     | string | current dir   | Working directory for the agent               |
+| `--stdin`   | bool   | `false`       | Read message from stdin                       |
+| `--timeout` | string | `30m`         | Timeout duration (e.g., `30m`, `1h`, `2h30m`) |
+| `--list`    | bool   | `false`       | List available agents and exit                |
+
+### run\_agent Utility Function
+
+Use `run_agent` in function steps to invoke an ACP agent programmatically:
+
+```yaml theme={null}
+- name: quick-analysis
+  type: function
+  function: 'run_agent("Analyze {{Target}} for security issues", "claude-code")'
+  exports:
+    result: "{{_result}}"
+
+# With default agent (claude-code)
+- name: summarize
+  type: function
+  function: 'run_agent("Summarize the findings in {{Output}}/results.txt")'
+  exports:
+    summary: "{{_result}}"
+```
+
+***
+
+## API Endpoints
+
+### LLM API
+
+OpenAI-compatible API:
+
+```bash theme={null}
+# Chat completion
+curl -X POST http://localhost:8002/osm/api/llm/v1/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [
+      {"role": "user", "content": "Analyze this vulnerability: ..."}
+    ]
+  }'
+
+# Embeddings
+curl -X POST http://localhost:8002/osm/api/llm/v1/embeddings \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "text-embedding-ada-002",
+    "input": ["text to embed"]
+  }'
+```
+
+### Agent ACP API
+
+OpenAI-compatible endpoint that spawns a local ACP agent subprocess:
+
+```bash theme={null}
+curl -X POST http://localhost:8002/osm/api/agent/chat/completions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-code",
+    "messages": [
+      {"role": "system", "content": "You are a security analyst."},
+      {"role": "user", "content": "Analyze the scan results and summarize findings."}
+    ]
+  }'
+```
+
+The `model` field maps to the agent name (`claude-code`, `codex`, `opencode`, `gemini`). Defaults to `claude-code` if unrecognized.
+
+<Note>Only one ACP agent subprocess can run at a time via the API. Concurrent requests return HTTP 409.</Note>
+
+## Providers
+
+### OpenAI
+
+```yaml theme={null}
+llm:
+  llm_providers:
+    - provider: openai
+      base_url: "https://api.openai.com/v1"
+      auth_token: "sk-..."
+      model: gpt-4
+```
+
+### Anthropic
+
+```yaml theme={null}
+llm:
+  llm_providers:
+    - provider: anthropic
+      base_url: "https://api.anthropic.com/v1"
+      auth_token: "sk-ant-..."
+      model: claude-3-opus
+```
+
+### Ollama (Local)
+
+```yaml theme={null}
+llm:
+  llm_providers:
+    - provider: ollama
+      base_url: "http://localhost:11434"
+      model: llama2
+```
+
+### Azure OpenAI
+
+```yaml theme={null}
+llm:
+  llm_providers:
+    - provider: azure
+      base_url: "https://your-resource.openai.azure.com"
+      auth_token: "..."
+      model: gpt-4
+```
+
+### Multiple Providers (Rotation)
+
+Configure multiple providers for automatic rotation:
+
+```yaml theme={null}
+llm:
+  llm_providers:
+    - provider: openai
+      base_url: "https://api.openai.com/v1"
+      auth_token: "sk-..."
+      model: gpt-4
+    - provider: anthropic
+      base_url: "https://api.anthropic.com/v1"
+      auth_token: "sk-ant-..."
+      model: claude-3-opus
+    - provider: ollama
+      base_url: "http://localhost:11434"
+      model: llama2
+```
+
+## Workflow Functions
+
+Use LLM functions directly in function steps without the full `llm` step type.
+
+### llm\_invoke
+
+Simple LLM call with a direct message:
+
+```yaml theme={null}
+- name: quick-summary
+  type: function
+  function: "llm_invoke('Summarize these findings: ' + readFile('{{Output}}/vulns.txt'))"
+  exports:
+    summary: "{{_result}}"
+```
+
+### llm\_invoke\_custom
+
+LLM call with a custom POST body template. Use `{{message}}` as a placeholder:
+
+```yaml theme={null}
+- name: custom-analysis
+  type: function
+  function: |
+    llm_invoke_custom(
+      'Analyze this target: {{Target}}',
+      '{"model": "gpt-4", "temperature": 0.5, "messages": [{"role": "user", "content": "{{message}}"}]}'
+    )
+```
+
+### llm\_conversations
+
+Multi-turn conversation using `role:content` format:
+
+```yaml theme={null}
+- name: conversation
+  type: function
+  function: |
+    llm_conversations(
+      'system:You are a security analyst.',
+      'user:What are common web vulnerabilities?',
+      'assistant:Common web vulnerabilities include SQL injection, XSS, CSRF...',
+      'user:How do I test for SQL injection?'
+    )
+  exports:
+    response: "{{_result}}"
+```
+
+## Use Cases
+
+### Vulnerability Analysis
+
+```yaml theme={null}
+- name: analyze-vulns
+  type: llm
+  messages:
+    - role: system
+      content: |
+        You are a security expert. Analyze vulnerabilities and provide:
+        1. Risk assessment
+        2. Impact analysis
+        3. Remediation steps
+    - role: user
+      content: "{{readFile('{{Output}}/nuclei-results.json')}}"
+```
+
+### Report Generation
+
+```yaml theme={null}
+- name: generate-report
+  type: llm
+  messages:
+    - role: user
+      content: |
+        Generate a security assessment report for {{target}}.
+
+        Subdomains found: {{fileLength("{{Output}}/subs.txt")}}
+        Live hosts: {{fileLength("{{Output}}/live.txt")}}
+        Vulnerabilities: {{readFile("{{Output}}/vulns.txt")}}
+  exports:
+    report: "{{generate_report_content}}"
+
+- name: save-report
+  type: bash
+  command: echo "{{report}}" > {{Output}}/report.md
+```
+
+### Intelligent Filtering
+
+```yaml theme={null}
+- name: filter-false-positives
+  type: llm
+  messages:
+    - role: system
+      content: |
+        Analyze these findings and mark false positives.
+        Return JSON: {"valid": [...], "false_positives": [...]}
+    - role: user
+      content: "{{readFile('{{Output}}/findings.json')}}"
+  response_format:
+    type: json_object
+```
+
+### Autonomous Reconnaissance Agent
+
+```yaml theme={null}
+- name: auto-recon
+  type: agent
+  query: |
+    Perform reconnaissance on {{Target}}:
+    1. Enumerate subdomains
+    2. Check for live hosts
+    3. Identify web technologies
+    4. Save a summary report to {{Output}}/agent-report.md
+  system_prompt: "You are an autonomous security reconnaissance agent with access to common security tools."
+  max_iterations: 30
+  memory:
+    max_messages: 40
+    summarize_on_truncate: true
+    persist_path: "{{Output}}/agent/recon-memory.json"
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+    - preset: save_content
+    - preset: glob
+    - preset: file_exists
+  exports:
+    recon_report: "{{agent_content}}"
+```
+
+### Delegated Code Analysis (Agent-ACP)
+
+```yaml theme={null}
+- name: code-review
+  type: agent-acp
+  agent: claude-code
+  cwd: "{{Output}}/source"
+  acp_config:
+    write_enabled: true
+  messages:
+    - role: system
+      content: "You are a security code reviewer."
+    - role: user
+      content: |
+        Review the source code in this directory for security vulnerabilities.
+        Focus on OWASP Top 10 issues. Write a report to ./security-review.md
+  exports:
+    review: "{{acp_output}}"
+```
+
+## Best Practices
+
+1. **Use system prompts** for consistent behavior
+2. **Limit context size** — summarize large inputs before passing to LLM
+3. **Set `max_iterations`** appropriately — higher for complex tasks, lower for simple queries
+4. **Enable memory management** for long-running agents to avoid context overflow
+5. **Use structured output** when you need to parse the response programmatically
+6. **Consider local models** (Ollama) for sensitive data that shouldn't leave your network
+7. **Use sub-agents** to decompose complex tasks into specialized subtasks
+8. **Add `stop_condition`** when the agent has a clear success criteria
+9. **Use `plan_prompt`** for complex tasks that benefit from upfront planning
+10. **Use `agent-acp`** when you need full coding agent capabilities (file editing, code generation) — use `agent` when you need fine-grained tool control within the osmedeus ecosystem
+11. **Restrict `allowed_paths`** in agent-acp steps to limit file access to the workspace
+12. **Keep `write_enabled: false`** (default) in agent-acp unless the agent needs to create files
+
+## Next Steps
+
+* [Step Types](../workflows/step-types.md) — LLM and Agent step details
+* [API Overview](../api/overview.md) — LLM endpoints
+* [Configuration](../getting-started/configuration.md) — LLM settings

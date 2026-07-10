@@ -1,0 +1,644 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Workflow Schema Reference
+
+> Complete YAML schema reference for Osmedeus workflows
+
+# Workflow Schema Reference
+
+This document provides a complete reference for the Osmedeus workflow YAML schema.
+
+## Top-Level Fields
+
+All workflows share these common top-level fields:
+
+```yaml theme={null}
+kind: module | flow | fragment     # Required: Workflow type
+name: workflow-name               # Required: Unique identifier
+description: "Description text"   # Optional: Human-readable description
+tags: "recon, fast"               # Optional: Comma-separated tags
+
+extends: parent-workflow          # Optional: Parent workflow to inherit from
+override:                         # Optional: Override sections from parent
+  params: {}
+  steps: {}
+  modules: {}
+
+params:                           # Optional: Input parameters
+  - name: param_name
+    default: "value"
+    required: false
+
+triggers:                          # Optional: Automated triggers
+  - name: trigger-name
+    on: cron | event | watch | manual
+    enabled: true
+
+dependencies:                     # Optional: External tool dependencies
+  binaries:
+    - nuclei
+    - httpx
+```
+
+## Workflow Kinds
+
+| Kind       | Purpose                  | Contains        |
+| ---------- | ------------------------ | --------------- |
+| `module`   | Single execution unit    | `steps` array   |
+| `flow`     | Orchestrate modules      | `modules` array |
+| `fragment` | Reusable step collection | `steps` array   |
+
+## Workflow Inheritance
+
+Workflows can extend parent workflows using the `extends` and `override` fields.
+
+### Extends Field
+
+```yaml theme={null}
+# By name (searched in workflow directory)
+extends: parent-workflow-name
+
+# By relative path
+extends: ./parent.yaml
+
+# By path from workflow directory
+extends: modules/base-module.yaml
+```
+
+### Override Schema
+
+```yaml theme={null}
+override:
+  # Override specific parameter properties
+  params:
+    param_name:
+      default: "new-value"
+      type: "string"
+      required: true
+      generator: "generator_func"
+
+  # Override steps (module workflows only)
+  steps:
+    mode: replace | prepend | append | merge
+    steps:                    # Steps to add/replace
+      - name: new-step
+        type: bash
+        command: "..."
+    remove:                   # Step names to remove (merge mode only)
+      - step-to-remove
+    replace:                  # Steps to replace by name (merge mode only)
+      - name: existing-step
+        type: bash
+        command: "new-command"
+
+  # Override modules (flow workflows only)
+  modules:
+    mode: replace | prepend | append | merge
+    modules:                  # Modules to add/replace
+      - name: new-module
+        path: modules/new.yaml
+    remove:                   # Module names to remove (merge mode only)
+      - module-to-remove
+    replace:                  # Modules to replace by name (merge mode only)
+      - name: existing-module
+        path: modules/replacement.yaml
+
+  # Replace triggers entirely
+  triggers:
+    - name: new-trigger
+      on: cron
+      schedule: "0 * * * *"
+
+  # Merge with parent dependencies
+  dependencies:
+    commands:
+      - new-tool
+    files:
+      - /path/to/file
+
+  # Override preferences (child values override parent)
+  preferences:
+    disable_notifications: true
+    silent: false
+
+  # Override runner configuration
+  runner_config:
+    image: "custom-image:latest"
+    env:
+      NEW_VAR: "value"
+
+  # Override runner type
+  runner: docker
+```
+
+### Override Modes
+
+| Mode      | Description                                                   |
+| --------- | ------------------------------------------------------------- |
+| `replace` | Completely replace parent items with child items              |
+| `prepend` | Add child items before parent items                           |
+| `append`  | Add child items after parent items (default)                  |
+| `merge`   | Match by name: replace matching, append new, remove specified |
+
+### Inheritance Example
+
+```yaml theme={null}
+# Parent: base-enum.yaml
+kind: module
+name: base-enum
+params:
+  - name: threads
+    default: 10
+steps:
+  - name: subfinder
+    type: bash
+    command: "subfinder -d {{Target}}"
+
+# Child: fast-enum.yaml
+kind: module
+name: fast-enum
+extends: base-enum
+
+override:
+  params:
+    threads:
+      default: 50
+  steps:
+    mode: append
+    steps:
+      - name: additional-tool
+        type: bash
+        command: "extra-tool -t {{Target}}"
+```
+
+## Module-Specific Fields
+
+Modules contain steps that execute sequentially or based on dependencies.
+
+```yaml theme={null}
+kind: module
+name: my-module
+
+# Runner configuration (optional)
+runner: host | docker | ssh
+runner_config:
+  # Docker settings
+  image: "ubuntu:latest"
+  env:
+    KEY: "value"
+  volumes:
+    - "/host/path:/container/path"
+  network: "host"
+  persistent: false
+
+  # SSH settings
+  host: "remote.example.com"
+  port: 22
+  user: "username"
+  key_file: "~/.ssh/id_rsa"
+  workdir: "/tmp"
+
+# Fragment includes
+includes:
+  - path: fragments/common-setup.yaml
+    fragment_name: setup           # Name for fragment-step reference
+    params:
+      custom_var: "{{Target}}"
+    position: prepend | append
+
+# Steps array
+steps:
+  - name: step-name
+    type: bash
+    command: "echo hello"
+```
+
+## Flow-Specific Fields
+
+Flows orchestrate multiple modules with dependencies.
+
+```yaml theme={null}
+kind: flow
+name: my-flow
+
+modules:
+  - name: first-module
+    path: modules/first.yaml
+    params:
+      threads: "10"
+
+  - name: second-module
+    path: modules/second.yaml
+    depends_on:
+      - first-module
+    condition: "fileLength('{{Output}}/subdomains.txt') > 0"
+    on_success:
+      - action: log
+        message: "Module completed"
+    on_error:
+      - action: notify
+        notify: "Module failed"
+    decision:
+      switch: "{{status}}"
+      cases:
+        "critical": { goto: alert-module }
+        "none": { goto: _end }
+      default: { goto: next-module }
+```
+
+## Fragment-Specific Fields
+
+Fragments are reusable step collections that can be included in modules.
+
+```yaml theme={null}
+kind: fragment
+name: common-subdomain-enum
+
+params:
+  - name: wordlist
+    default: "{{Data}}/wordlists/subdomains.txt"
+
+steps:
+  - name: subfinder
+    type: bash
+    command: "subfinder -d {{Target}} -o {{Output}}/subfinder.txt"
+
+  - name: amass
+    type: bash
+    command: "amass enum -d {{Target}} -o {{Output}}/amass.txt"
+```
+
+## Step Types
+
+### Step Type: bash
+
+Execute shell commands locally.
+
+```yaml theme={null}
+- name: run-nuclei
+  type: bash
+  command: "nuclei -l {{Output}}/urls.txt -o {{Output}}/nuclei.json"
+  timeout: 1h
+
+# Multiple sequential commands
+- name: multi-commands
+  type: bash
+  commands:
+    - "echo 'Step 1'"
+    - "echo 'Step 2'"
+
+# Parallel commands
+- name: parallel-scans
+  type: bash
+  parallel_commands:
+    - "nuclei -l urls.txt -t cves/"
+    - "nuclei -l urls.txt -t exposed-panels/"
+```
+
+### Step Type: function
+
+Execute utility functions via the Goja JavaScript runtime.
+
+```yaml theme={null}
+- name: check-results
+  type: function
+  function: "fileExists('{{Output}}/results.txt')"
+  exports:
+    has_results: "{{_result}}"
+
+# Multiple functions
+- name: process-data
+  type: function
+  functions:
+    - "log_info('Processing started')"
+    - "sortUnix('{{Output}}/urls.txt')"
+    - "remove_blank_lines('{{Output}}/urls.txt')"
+```
+
+### Step Type: parallel-steps
+
+Execute multiple steps concurrently.
+
+```yaml theme={null}
+- name: parallel-enum
+  type: parallel-steps
+  parallel_steps:
+    - name: subfinder
+      type: bash
+      command: "subfinder -d {{Target}} -o {{Output}}/subfinder.txt"
+    - name: amass
+      type: bash
+      command: "amass enum -d {{Target}} -o {{Output}}/amass.txt"
+```
+
+### Step Type: foreach
+
+Iterate over input lines with parallel processing.
+
+```yaml theme={null}
+- name: scan-subdomains
+  type: foreach
+  input: "{{Output}}/subdomains.txt"
+  variable: subdomain
+  threads: 10
+  step:
+    name: httpx-probe
+    type: bash
+    command: "httpx -u [[subdomain]] >> {{Output}}/httpx.txt"
+```
+
+### Step Type: remote-bash
+
+Execute commands in Docker containers or via SSH.
+
+```yaml theme={null}
+# Docker execution
+- name: docker-scan
+  type: remote-bash
+  step_runner: docker
+  step_runner_config:
+    image: "projectdiscovery/nuclei:latest"
+    volumes:
+      - "{{Output}}:/output"
+  command: "nuclei -l /output/urls.txt -o /output/nuclei.json"
+  step_remote_file: "/output/nuclei.json"
+  host_output_file: "{{Output}}/nuclei.json"
+
+# SSH execution
+- name: ssh-scan
+  type: remote-bash
+  step_runner: ssh
+  step_runner_config:
+    host: "scan-server.example.com"
+    user: "scanner"
+    key_file: "~/.ssh/id_rsa"
+  command: "nuclei -l /tmp/urls.txt"
+```
+
+### Step Type: http
+
+Make HTTP requests and capture responses.
+
+```yaml theme={null}
+- name: api-call
+  type: http
+  url: "https://api.example.com/scan"
+  method: POST
+  headers:
+    Authorization: "Bearer {{api_token}}"
+    Content-Type: "application/json"
+  request_body: '{"target": "{{Target}}"}'
+  exports:
+    response: "{{_result}}"
+```
+
+### Step Type: llm
+
+Interact with LLM APIs (OpenAI-compatible).
+
+```yaml theme={null}
+- name: analyze-vulns
+  type: llm
+  messages:
+    - role: system
+      content: "You are a security analyst."
+    - role: user
+      content: "Analyze these findings: {{findings}}"
+  llm_config:
+    model: "gpt-4"
+    temperature: 0.7
+    max_tokens: 2000
+  exports:
+    analysis: "{{_result}}"
+
+# Embeddings
+- name: embed-text
+  type: llm
+  is_embedding: true
+  embedding_input:
+    - "text to embed"
+  exports:
+    embedding: "{{_result}}"
+```
+
+### Step Type: fragment-step
+
+Execute a fragment inline with optional overrides.
+
+```yaml theme={null}
+# Include fragment in module
+includes:
+  - path: fragments/subdomain-enum.yaml
+    fragment_name: subdomain-enum
+
+steps:
+  - name: run-subdomain-enum
+    type: fragment-step
+    fragment_name: subdomain-enum
+    override:
+      threads: "20"                    # Override step field
+      wordlist: "{{custom_wordlist}}"  # Override template variable
+```
+
+## Common Step Fields
+
+These fields are available on all step types:
+
+```yaml theme={null}
+- name: step-name                    # Required: Unique step identifier
+  type: bash                         # Required: Step type
+
+  depends_on:                        # Optional: Step dependencies (DAG)
+    - previous-step
+
+  pre_condition: "fileExists('{{file}}')"  # Optional: Skip if false
+
+  timeout: 30m                       # Optional: Step timeout (e.g., 30, 30s, 30m, 1h, 1d)
+
+  log: "{{Output}}/step.log"         # Optional: Log file path
+
+  exports:                           # Optional: Export variables
+    result_count: "{{_result}}"
+
+  on_success:                        # Optional: Success handlers
+    - action: log
+      message: "Step completed"
+
+  on_error:                          # Optional: Error handlers
+    - action: abort
+      message: "Critical failure"
+
+  decision:                          # Optional: Conditional routing
+    switch: "{{status}}"
+    cases:
+      "critical": { goto: alert-step }
+    default: { goto: next-step }
+```
+
+## Decision Routing
+
+Steps support conditional branching using switch/case syntax:
+
+```yaml theme={null}
+decision:
+  switch: "{{variable}}"
+  cases:
+    "value1": { goto: step-a }
+    "value2": { goto: step-b }
+  default: { goto: fallback }
+```
+
+Use `goto: _end` to terminate the workflow.
+
+## Parameters
+
+Parameters define workflow inputs with validation:
+
+```yaml theme={null}
+params:
+  - name: threads
+    type: number
+    default: 10
+    required: false
+    description: "Number of threads"
+
+  - name: wordlist
+    type: file
+    default: "{{Data}}/wordlists/common.txt"
+    required: false
+
+  - name: target_type
+    type: string
+    required: true
+```
+
+## Triggers
+
+Triggers define automated execution:
+
+```yaml theme={null}
+triggers:
+  # Cron trigger
+  - name: daily-scan
+    on: cron
+    schedule: "0 2 * * *"
+    enabled: true
+
+  # Event trigger
+  - name: on-new-asset
+    on: event
+    topic: "assets.new"
+    filter:
+      asset_type: "subdomain"
+    enabled: true
+
+  # File watch trigger
+  - name: watch-targets
+    on: watch
+    paths:
+      - "{{Data}}/targets.txt"
+    enabled: true
+
+  # Manual (default)
+  - name: manual
+    on: manual
+    enabled: true
+```
+
+## Complete Examples
+
+### Module Example
+
+```yaml theme={null}
+kind: module
+name: subdomain-enum
+description: "Enumerate subdomains for a target domain"
+tags: "recon, subdomain"
+
+params:
+  - name: threads
+    default: 10
+  - name: wordlist
+    default: "{{Data}}/wordlists/subdomains.txt"
+
+steps:
+  - name: subfinder
+    type: bash
+    command: "subfinder -d {{Target}} -all -o {{Output}}/subfinder.txt"
+    timeout: 30m
+
+  - name: merge-results
+    type: function
+    depends_on:
+      - subfinder
+    functions:
+      - "sortUnix('{{Output}}/subfinder.txt', '{{Output}}/subdomains.txt')"
+      - "db_total_subdomains('{{Output}}/subdomains.txt')"
+```
+
+### Flow Example
+
+```yaml theme={null}
+kind: flow
+name: full-recon
+description: "Complete reconnaissance workflow"
+tags: "recon, full"
+
+modules:
+  - name: subdomain-enum
+    path: modules/subdomain-enum.yaml
+    params:
+      threads: "20"
+
+  - name: port-scan
+    path: modules/port-scan.yaml
+    depends_on:
+      - subdomain-enum
+    condition: "fileLength('{{Output}}/subdomains.txt') > 0"
+
+  - name: vuln-scan
+    path: modules/vuln-scan.yaml
+    depends_on:
+      - port-scan
+```
+
+### Fragment Example
+
+```yaml theme={null}
+kind: fragment
+name: common-cleanup
+description: "Common cleanup steps"
+
+steps:
+  - name: deduplicate
+    type: function
+    function: "sortUnix('{{input_file}}')"
+
+  - name: remove-blanks
+    type: function
+    function: "remove_blank_lines('{{input_file}}')"
+```
+
+### Module Using Fragment
+
+```yaml theme={null}
+kind: module
+name: subdomain-scan
+
+includes:
+  - path: fragments/common-cleanup.yaml
+    fragment_name: cleanup
+
+steps:
+  - name: subfinder
+    type: bash
+    command: "subfinder -d {{Target}} -o {{Output}}/subs-raw.txt"
+
+  - name: cleanup-results
+    type: fragment-step
+    fragment_name: cleanup
+    override:
+      input_file: "{{Output}}/subs-raw.txt"
+```

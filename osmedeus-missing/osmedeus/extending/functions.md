@@ -1,0 +1,352 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Adding Functions
+
+Register custom utility functions for use in workflows.
+
+## Overview
+
+Functions are implemented in Go and exposed to the Goja JavaScript VM runtime in `internal/functions/`.
+
+## Function Registry
+
+Functions are registered in `internal/functions/goja_runtime.go`:
+
+```go theme={null}
+func (r *GojaRuntime) registerFunctions() {
+    // File functions
+    r.vm.Set("fileExists", r.fileExists)
+    r.vm.Set("fileLength", r.fileLength)
+    r.vm.Set("readFile", r.readFile)
+
+    // String functions
+    r.vm.Set("trim", r.trim)
+    r.vm.Set("split", r.split)
+
+    // Add your function
+    r.vm.Set("myNewFunction", r.myNewFunction)
+}
+```
+
+## Steps to Add a Function
+
+### 1. Implement the Function
+
+Add to an appropriate file in `internal/functions/`:
+
+```go theme={null}
+// internal/functions/util_functions.go
+
+func (r *GojaRuntime) myNewFunction(call goja.FunctionCall) goja.Value {
+    // Get arguments
+    if len(call.ArgumentList) < 1 {
+        return goja.Undefined()
+    }
+
+    arg1 := call.Argument(0).String()
+
+    // Optional second argument with default
+    arg2 := "default"
+    if len(call.ArgumentList) > 1 {
+        arg2 = call.Argument(1).String()
+    }
+
+    // Perform operation
+    result, err := doSomething(arg1, arg2)
+    if err != nil {
+        // Return undefined or error value
+        r.vm.Set("_error", err.Error())
+        return goja.Undefined()
+    }
+
+    // Convert result to Goja value
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+### 2. Register the Function
+
+Update `internal/functions/goja_runtime.go`:
+
+```go theme={null}
+func (r *GojaRuntime) registerFunctions() {
+    // ... existing registrations ...
+
+    // Register your new function
+    r.vm.Set("myNewFunction", r.myNewFunction)
+}
+```
+
+### 3. Add to Function List
+
+Update `internal/functions/registry.go` for `ListFunctions()`:
+
+```go theme={null}
+func (r *Registry) ListFunctions() []FunctionInfo {
+    return []FunctionInfo{
+        // ... existing functions ...
+        {
+            Name:        "myNewFunction",
+            Description: "Description of what it does",
+            Signature:   "myNewFunction(arg1, arg2?)",
+            Category:    "util",
+        },
+    }
+}
+```
+
+### 4. Write Tests
+
+Add to `internal/functions/registry_test.go`:
+
+```go theme={null}
+func TestMyNewFunction(t *testing.T) {
+    registry := functions.NewRegistry()
+
+    result, err := registry.Execute(`myNewFunction("input", "option")`, nil)
+
+    require.NoError(t, err)
+    assert.Equal(t, "expected-output", result)
+}
+
+func TestMyNewFunction_DefaultArg(t *testing.T) {
+    registry := functions.NewRegistry()
+
+    result, err := registry.Execute(`myNewFunction("input")`, nil)
+
+    require.NoError(t, err)
+    assert.Equal(t, "expected-with-default", result)
+}
+```
+
+## Return Types
+
+### String
+
+```go theme={null}
+func (r *GojaRuntime) myStringFunc(call goja.FunctionCall) goja.Value {
+    result := "hello world"
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+### Boolean
+
+```go theme={null}
+func (r *GojaRuntime) myBoolFunc(call goja.FunctionCall) goja.Value {
+    result := true
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+### Number
+
+```go theme={null}
+func (r *GojaRuntime) myNumberFunc(call goja.FunctionCall) goja.Value {
+    result := 42
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+### Array
+
+```go theme={null}
+func (r *GojaRuntime) myArrayFunc(call goja.FunctionCall) goja.Value {
+    result := []string{"a", "b", "c"}
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+### Object/Map
+
+```go theme={null}
+func (r *GojaRuntime) myObjectFunc(call goja.FunctionCall) goja.Value {
+    result := map[string]interface{}{
+        "key1": "value1",
+        "key2": 42,
+    }
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+## Working with Context
+
+Functions can access the execution context:
+
+```go theme={null}
+func (r *GojaRuntime) myContextFunc(call goja.FunctionCall) goja.Value {
+    // Get context variables
+    ctxValue, err := r.vm.Get("_context")
+    if err != nil {
+        return goja.Undefined()
+    }
+
+    ctx, _ := ctxValue.Export()
+    contextMap := ctx.(map[string]interface{})
+
+    target := contextMap["target"].(string)
+
+    // Use context in function logic
+    result := processWithContext(target)
+
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+## Example: Hash Function
+
+```go theme={null}
+// internal/functions/util_functions.go
+
+import (
+    "crypto/md5"
+    "crypto/sha256"
+    "encoding/hex"
+)
+
+func (r *GojaRuntime) hash(call goja.FunctionCall) goja.Value {
+    if len(call.ArgumentList) < 2 {
+        return goja.Undefined()
+    }
+
+    input := call.Argument(0).String()
+    algorithm := call.Argument(1).String()
+
+    var result string
+    switch algorithm {
+    case "md5":
+        hash := md5.Sum([]byte(input))
+        result = hex.EncodeToString(hash[:])
+    case "sha256":
+        hash := sha256.Sum256([]byte(input))
+        result = hex.EncodeToString(hash[:])
+    default:
+        return goja.Undefined()
+    }
+
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+Register:
+
+```go theme={null}
+r.vm.Set("hash", r.hash)
+```
+
+Usage in workflow:
+
+```yaml theme={null}
+- name: compute-hash
+  type: function
+  function: hash("{{target}}", "sha256")
+  exports:
+    target_hash: "{{result}}"
+```
+
+## Example: HTTP Fetch Function
+
+```go theme={null}
+// internal/functions/http_functions.go
+
+func (r *GojaRuntime) httpFetch(call goja.FunctionCall) goja.Value {
+    if len(call.ArgumentList) < 1 {
+        return goja.Undefined()
+    }
+
+    url := call.Argument(0).String()
+
+    // Optional method (default GET)
+    method := "GET"
+    if len(call.ArgumentList) > 1 {
+        method = call.Argument(1).String()
+    }
+
+    // Optional headers
+    headers := make(map[string]string)
+    if len(call.ArgumentList) > 2 {
+        headersArg, _ := call.Argument(2).Export()
+        if h, ok := headersArg.(map[string]interface{}); ok {
+            for k, v := range h {
+                headers[k] = fmt.Sprintf("%v", v)
+            }
+        }
+    }
+
+    // Make request
+    req, err := http.NewRequest(method, url, nil)
+    if err != nil {
+        return goja.Undefined()
+    }
+
+    for k, v := range headers {
+        req.Header.Set(k, v)
+    }
+
+    client := &http.Client{Timeout: 30 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        return goja.Undefined()
+    }
+    defer resp.Body.Close()
+
+    body, _ := io.ReadAll(resp.Body)
+
+    result := map[string]interface{}{
+        "status":  resp.StatusCode,
+        "body":    string(body),
+        "headers": resp.Header,
+    }
+
+    value, _ := r.vm.ToValue(result)
+    return value
+}
+```
+
+Usage:
+
+```yaml theme={null}
+- name: fetch-api
+  type: function
+  function: httpFetch("https://api.example.com/data", "GET", {"Authorization": "Bearer token"})
+  exports:
+    api_data: "{{result.body}}"
+```
+
+## Best Practices
+
+1. **Validate arguments** - Check argument count and types
+2. **Handle errors gracefully** - Return undefined for errors
+3. **Document the function** - Add to ListFunctions()
+4. **Write tests** - Cover happy path and edge cases
+5. **Keep functions pure** - Minimize side effects
+6. **Support optional arguments** - Use sensible defaults
+
+## Function Categories
+
+Organize functions by category:
+
+| Category | File                  | Functions                                   |
+| -------- | --------------------- | ------------------------------------------- |
+| `file`   | `file_functions.go`   | fileExists, fileLength, readFile, writeFile |
+| `string` | `string_functions.go` | trim, split, join, replace, contains        |
+| `util`   | `util_functions.go`   | log\_info, getEnvVar, exit                  |
+| `http`   | `http_functions.go`   | http\_get, http\_post                       |
+| `db`     | `db_functions.go`     | db\_select, db\_select\_assets              |
+| `jq`     | `jq.go`               | jq                                          |
+
+## Next Steps
+
+* [Adding Step Types](step-types.md) - Custom step executors
+* [Functions Reference](../functions/reference.md) - All functions
+* [Functions Overview](../functions/overview.md) - Usage guide

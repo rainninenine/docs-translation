@@ -1,0 +1,393 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Flow Workflows
+
+> Multi-module orchestration with dependencies
+
+Flows orchestrate multiple modules with dependencies and conditional execution.
+
+## Basic Flow
+
+```yaml theme={null}
+kind: flow
+name: basic-recon
+description: Basic reconnaissance flow
+
+params:
+  - name: target
+    required: true
+
+modules:
+  - name: subdomain-enum
+    path: modules/subdomain-enum.yaml
+
+  - name: http-probe
+    path: modules/http-probe.yaml
+    depends_on:
+      - subdomain-enum
+
+  - name: screenshot
+    path: modules/screenshot.yaml
+    depends_on:
+      - http-probe
+```
+
+## Module Reference Fields
+
+```yaml theme={null}
+modules:
+  - name: module-name           # Required: reference name
+    path: path/to/module.yaml   # Required: module file path
+    depends_on:                 # Optional: dependency list
+      - other-module
+    condition: 'expression'     # Optional: skip condition
+    params:                     # Optional: parameter overrides
+      key: value
+```
+
+### name
+
+Unique identifier for this module reference within the flow.
+
+```yaml theme={null}
+- name: subdomain-enum      # Used in depends_on references
+```
+
+### path
+
+Path to the module YAML file (relative to workflow folder).
+
+```yaml theme={null}
+- name: nuclei
+  path: modules/nuclei-scan.yaml
+```
+
+### depends\_on
+
+List of module names that must complete before this module runs.
+
+```yaml theme={null}
+- name: vuln-scan
+  path: modules/vuln.yaml
+  depends_on:
+    - subdomain-enum
+    - http-probe        # Both must complete first
+```
+
+### condition
+
+JavaScript expression evaluated before module execution. Module is skipped if false.
+
+```yaml theme={null}
+- name: screenshot
+  path: modules/screenshot.yaml
+  depends_on: [http-probe]
+  condition: 'fileLength("{{Output}}/live-hosts.txt") > 0'
+```
+
+Common conditions:
+
+```yaml theme={null}
+# File has content
+condition: 'fileLength("{{Output}}/data.txt") > 0'
+
+# File exists
+condition: 'fileExists("{{Output}}/targets.txt")'
+
+# Parameter check
+condition: '{{enable_vuln_scan}} == "true"'
+```
+
+### params
+
+Override module parameters.
+
+```yaml theme={null}
+- name: nuclei-fast
+  path: modules/nuclei-scan.yaml
+  params:
+    threads: "100"
+    severity: "critical,high"
+```
+
+## Inline Modules
+
+Modules can define steps directly instead of referencing an external YAML file. This is useful for simple, self-contained tasks that don't warrant a separate file.
+
+```yaml theme={null}
+kind: flow
+name: quick-recon
+
+modules:
+  - name: quick-check
+    description: Inline health check
+    steps:
+      - name: ping
+        type: bash
+        command: ping -c 1 {{Target}}
+
+      - name: http-check
+        type: bash
+        command: curl -s -o /dev/null -w '%{http_code}' https://{{Target}}
+        exports:
+          status_code: "{{stdout}}"
+
+  - name: full-scan
+    path: modules/full-scan.yaml
+    depends_on: [quick-check]
+    condition: '{{status_code}} == "200"'
+```
+
+### Inline Module Fields
+
+| Field           | Description                                             |
+| --------------- | ------------------------------------------------------- |
+| `name`          | Required. Module reference name                         |
+| `steps`         | Inline steps (makes this an inline module)              |
+| `description`   | Description for the inline module                       |
+| `runner`        | Runner type for inline module (`host`, `docker`, `ssh`) |
+| `runner_config` | Runner configuration for inline module                  |
+
+When `steps` is defined, the module is treated as inline — no `path` is needed. Inline modules support the same step types and features as external module files.
+
+### Inline Module with Runner
+
+```yaml theme={null}
+modules:
+  - name: docker-scan
+    description: Run nuclei in Docker
+    runner: docker
+    runner_config:
+      image: projectdiscovery/nuclei:latest
+      volumes:
+        - "{{Output}}:/output"
+    steps:
+      - name: nuclei
+        type: bash
+        command: nuclei -u {{Target}} -o /output/nuclei.txt
+```
+
+## Dependency Graph
+
+Flows create a directed acyclic graph (DAG):
+
+```yaml theme={null}
+modules:
+  - name: A
+    path: modules/a.yaml
+
+  - name: B
+    path: modules/b.yaml
+    depends_on: [A]
+
+  - name: C
+    path: modules/c.yaml
+    depends_on: [A]
+
+  - name: D
+    path: modules/d.yaml
+    depends_on: [B, C]
+```
+
+Execution:
+
+```
+    A           # Step 1: A runs
+   / \
+  B   C         # Step 2: B and C run in parallel
+   \ /
+    D           # Step 3: D runs after B and C
+```
+
+## Complex Flow Example
+
+```yaml theme={null}
+kind: flow
+name: full-assessment
+description: Complete security assessment
+
+params:
+  - name: target
+    required: true
+  - name: enable_active
+    default: "false"
+    description: Enable active scanning
+
+modules:
+  # Passive reconnaissance
+  - name: subdomain-enum
+    path: modules/subdomain-enum.yaml
+
+  - name: dns-enum
+    path: modules/dns-enum.yaml
+
+  # Both can run in parallel, both depend on nothing
+  # Execution: subdomain-enum and dns-enum run together
+
+  - name: http-probe
+    path: modules/http-probe.yaml
+    depends_on:
+      - subdomain-enum
+      - dns-enum
+    # Waits for both to complete
+
+  - name: screenshot
+    path: modules/screenshot.yaml
+    depends_on: [http-probe]
+    condition: 'fileLength("{{Output}}/live.txt") > 10'
+
+  - name: content-discovery
+    path: modules/content-discovery.yaml
+    depends_on: [http-probe]
+
+  # Active scanning (conditional)
+  - name: port-scan
+    path: modules/port-scan.yaml
+    depends_on: [subdomain-enum]
+    condition: '{{enable_active}} == "true"'
+
+  - name: vuln-scan
+    path: modules/vuln-scan.yaml
+    depends_on:
+      - http-probe
+      - port-scan
+    condition: '{{enable_active}} == "true" && fileExists("{{Output}}/live.txt")'
+
+  # Reporting
+  - name: generate-report
+    path: modules/report.yaml
+    depends_on:
+      - screenshot
+      - content-discovery
+      - vuln-scan
+```
+
+## Running Flows
+
+```bash theme={null}
+# Basic execution
+osmedeus run -f full-assessment -t example.com
+
+# With parameters
+osmedeus run -f full-assessment -t example.com -p 'enable_active=true'
+
+# Exclude specific modules
+osmedeus run -f full-assessment -t example.com -x vuln-scan -x port-scan
+
+# Dry run (preview)
+osmedeus run -f full-assessment -t example.com --dry-run
+```
+
+## Module Exclusion
+
+Skip specific modules using exact match (`-x`) or substring match (`-X`):
+
+```bash theme={null}
+# Exact match - exclude specific modules by name
+osmedeus run -f full-assessment -t target -x screenshot -x port-scan
+
+# Fuzzy match - exclude modules whose name contains the substring
+osmedeus run -f full-assessment -t target -X nmap -X nuclei
+```
+
+| Flag                           | Description                                                |
+| ------------------------------ | ---------------------------------------------------------- |
+| `-x, --exclude <module>`       | Exclude module by exact name (repeatable)                  |
+| `-X, --fuzzy-exclude <substr>` | Exclude modules whose name contains substring (repeatable) |
+
+Excluded modules are treated as completed (dependencies are satisfied).
+
+## Flow-Level vs Module-Level Params
+
+```yaml theme={null}
+# Flow definition
+kind: flow
+name: my-flow
+params:
+  - name: target
+    required: true
+  - name: threads
+    default: "50"           # Flow-level default
+
+modules:
+  - name: scan
+    path: modules/scan.yaml
+    params:
+      threads: "{{threads}}"   # Use flow param
+      wordlist: "/custom.txt"  # Module-specific override
+```
+
+Resolution order:
+
+1. Module reference `params` (highest priority)
+2. Flow-level `params`
+3. Module's own default params (lowest priority)
+
+## Error Handling
+
+By default, if a module fails:
+
+* Dependent modules are skipped
+* Other independent branches continue
+
+```yaml theme={null}
+modules:
+  - name: A
+    path: modules/a.yaml
+
+  - name: B
+    path: modules/b.yaml
+    depends_on: [A]
+    # If A fails, B is skipped
+
+  - name: C
+    path: modules/c.yaml
+    # C runs regardless of A or B
+```
+
+## Best Practices
+
+1. **Group related modules**
+   ```yaml theme={null}
+   # Passive recon group
+   - name: subdomain-enum
+   - name: dns-enum
+
+   # Active scan group
+   - name: port-scan
+   - name: vuln-scan
+   ```
+
+2. **Use conditions for optional modules**
+   ```yaml theme={null}
+   - name: active-scan
+     condition: '{{enable_active}} == "true"'
+   ```
+
+3. **Check file existence before processing**
+   ```yaml theme={null}
+   - name: process-results
+     condition: 'fileLength("{{Output}}/data.txt") > 0'
+   ```
+
+4. **Parameterize module behavior**
+   ```yaml theme={null}
+   - name: nuclei
+     params:
+       threads: "{{threads}}"
+       severity: "{{severity}}"
+   ```
+
+5. **Add a final reporting module**
+   ```yaml theme={null}
+   - name: report
+     depends_on: [all, other, modules]
+   ```
+
+## Next Steps
+
+* [Variables](variables) - Parameter propagation
+* [Control Flow](control-flow) - Conditions in detail
+* [Step Types](step-types) - Module step types

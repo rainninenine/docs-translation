@@ -1,0 +1,507 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Default Variables Reference
+
+> Complete reference for template variables and utility functions in Osmedeus
+
+# Default Variables Reference
+
+Osmedeus workflows use template variables for dynamic content substitution. Variables are enclosed in double curly braces: `{{variable}}`.
+
+## Template Syntax
+
+### Standard Variables
+
+Standard variables use `{{variable}}` syntax and are evaluated at step execution time.
+
+```yaml theme={null}
+command: "nuclei -l {{Output}}/urls.txt -t {{Data}}/templates/"
+```
+
+### Secondary Variables (Foreach)
+
+Foreach loops use `[[variable]]` syntax to avoid conflicts with standard templates:
+
+```yaml theme={null}
+- name: scan-each
+  type: foreach
+  input: "{{Output}}/subdomains.txt"
+  variable: sub
+  step:
+    type: bash
+    command: "httpx -u [[sub]] >> {{Output}}/httpx.txt"
+```
+
+## Built-in Variables
+
+### Path Variables
+
+| Variable                   | Description                                   | Default                                    |
+| -------------------------- | --------------------------------------------- | ------------------------------------------ |
+| `{{BaseFolder}}`           | Base installation folder                      | `~/osmedeus-base`                          |
+| `{{base_folder}}`          | Alias for BaseFolder                          | `~/osmedeus-base`                          |
+| `{{Binaries}}`             | Path to binaries                              | `{{BaseFolder}}/external-binaries`         |
+| `{{Data}}`                 | Path to data files                            | `{{BaseFolder}}/data`                      |
+| `{{ExternalData}}`         | Alias for Data                                | `{{BaseFolder}}/data`                      |
+| `{{ExternalConfigs}}`      | Path to external configs                      | `{{BaseFolder}}/configs`                   |
+| `{{ExternalScripts}}`      | Path to external scripts                      | `{{BaseFolder}}/scripts`                   |
+| `{{ExternalAgentConfigs}}` | Path to agent configs                         | `{{BaseFolder}}/external-agent-configs`    |
+| `{{ExternalAgents}}`       | Alias for ExternalAgentConfigs                | `{{BaseFolder}}/external-agent-configs`    |
+| `{{Workflows}}`            | Path to workflows                             | `{{BaseFolder}}/workflows`                 |
+| `{{MarkdownTemplates}}`    | Path to markdown report templates             | `{{BaseFolder}}/markdown-report-templates` |
+| `{{ExternalMarkdowns}}`    | Alias for MarkdownTemplates                   | `{{BaseFolder}}/markdown-report-templates` |
+| `{{Workspaces}}`           | Path to workspaces (overridable with -W flag) | `~/workspaces-osmedeus`                    |
+| `{{SnapshotsFolder}}`      | Path to snapshots                             | `{{BaseFolder}}/snapshots`                 |
+
+### Target Variables
+
+| Variable          | Description                       | Example                      |
+| ----------------- | --------------------------------- | ---------------------------- |
+| `{{Target}}`      | Current scan target               | `example.com`                |
+| `{{target}}`      | Alias for Target                  | `example.com`                |
+| `{{TargetFile}}`  | File containing targets (-T flag) | `/path/to/targets.txt`       |
+| `{{TargetSpace}}` | Sanitized target (workspace name) | `example_com`                |
+| `{{Output}}`      | Output directory for target       | `{{Workspaces}}/example_com` |
+| `{{Workspace}}`   | Alias for TargetSpace             | `example_com`                |
+| `{{workspace}}`   | Alias for Workspace               | `example_com`                |
+
+### Target Heuristics (Auto-Detected)
+
+These variables are automatically populated based on target type detection. Set `--heuristics none` to disable.
+
+| Variable              | Description      | Applies To                               |
+| --------------------- | ---------------- | ---------------------------------------- |
+| `{{TargetType}}`      | Detected type    | `url`, `domain`, `ip`, `file`, `unknown` |
+| `{{HeuristicsCheck}}` | Heuristics level | `basic` (default), `deep`, `none`        |
+
+**URL Target Variables** (when `{{TargetType}}` is `url`):
+
+| Variable                  | Description                    | Example                    |
+| ------------------------- | ------------------------------ | -------------------------- |
+| `{{TargetBaseURL}}`       | Base URL without path          | `https://example.com:8080` |
+| `{{TargetRootURL}}`       | Root URL (scheme+host)         | `https://example.com`      |
+| `{{TargetHostname}}`      | Hostname from URL              | `example.com`              |
+| `{{TargetRootDomain}}`    | Root domain                    | `example.com`              |
+| `{{TargetTLD}}`           | Top-level domain               | `com`                      |
+| `{{TargetSLD}}`           | Second-level domain            | `example`                  |
+| `{{Org}}`                 | Alias for TargetSLD            | `example`                  |
+| `{{TargetHost}}`          | Host with port                 | `example.com:8080`         |
+| `{{TargetPort}}`          | Port number                    | `8080`                     |
+| `{{TargetPath}}`          | URL path                       | `/api/v1`                  |
+| `{{TargetFileExt}}`       | File extension                 | `html`                     |
+| `{{TargetScheme}}`        | URL scheme                     | `https`                    |
+| `{{TargetStatusCode}}`    | HTTP status code (if detected) | `200`                      |
+| `{{TargetContentLength}}` | Content length (if detected)   | `1234`                     |
+
+**Domain Target Variables** (when `{{TargetType}}` is `domain`):
+
+| Variable               | Description                        | Example         |
+| ---------------------- | ---------------------------------- | --------------- |
+| `{{TargetRootDomain}}` | Root domain                        | `example.com`   |
+| `{{TargetTLD}}`        | Top-level domain                   | `com`           |
+| `{{TargetSLD}}`        | Second-level domain                | `example`       |
+| `{{Org}}`              | Alias for TargetSLD                | `example`       |
+| `{{TargetIsWildcard}}` | Is wildcard subdomain              | `true`, `false` |
+| `{{TargetResolvedIP}}` | Resolved IP address (if available) | `93.184.216.34` |
+
+**IP Target Variables** (when `{{TargetType}}` is `ip`):
+
+| Variable               | Description       | Example       |
+| ---------------------- | ----------------- | ------------- |
+| `{{TargetRootDomain}}` | Original IP value | `192.168.1.1` |
+
+### Platform Detection Variables
+
+| Variable                    | Description                 | Example Values                 |
+| --------------------------- | --------------------------- | ------------------------------ |
+| `{{PlatformOS}}`            | Operating system            | `linux`, `darwin`, `windows`   |
+| `{{PlatformArch}}`          | CPU architecture            | `amd64`, `arm64`               |
+| `{{PlatformInDocker}}`      | Running in Docker container | `true`, `false`                |
+| `{{PlatformInKubernetes}}`  | Running in Kubernetes pod   | `true`, `false`                |
+| `{{PlatformCloudProvider}}` | Detected cloud provider     | `aws`, `gcp`, `azure`, `local` |
+
+### Thread Variables
+
+| Variable          | Description                     | Default |
+| ----------------- | ------------------------------- | ------- |
+| `{{threads}}`     | Thread count (tactic based)     | `10`    |
+| `{{baseThreads}}` | Base thread count (threads / 2) | `5`     |
+
+### Metadata Variables
+
+| Variable           | Description                                         | Example                                |
+| ------------------ | --------------------------------------------------- | -------------------------------------- |
+| `{{Version}}`      | Osmedeus version                                    | `5.0.0`                                |
+| `{{ModuleName}}`   | Current workflow/module name                        | `subdomain-enum`                       |
+| `{{workflow}}`     | Alias for ModuleName                                | `subdomain-enum`                       |
+| `{{FlowName}}`     | Parent flow name (empty if running module directly) | `recon-flow`                           |
+| `{{RunUUID}}`      | UUID for current run execution                      | `550e8400-e29b-41d4-a716-446655440000` |
+| `{{run_uuid}}`     | Alias for RunUUID                                   | `550e8400-e29b-41d4-a716-446655440000` |
+| `{{DBRunID}}`      | Integer Run.ID for database foreign keys            | `42`                                   |
+| `{{TaskDate}}`     | Task date                                           | `2025-01-15`                           |
+| `{{Today}}`        | Current date                                        | `2025-01-15`                           |
+| `{{TimeStamp}}`    | Unix timestamp                                      | `1705312800`                           |
+| `{{CurrentTime}}`  | Current time (ISO 8601)                             | `2025-01-15T10:00:00`                  |
+| `{{RandomString}}` | Random 6-char lowercase string                      | `xkmprq`                               |
+
+### Constants
+
+| Variable        | Description               | Example           |
+| --------------- | ------------------------- | ----------------- |
+| `{{DefaultUA}}` | Default User-Agent string | `Mozilla/5.0 ...` |
+
+### State File Variables
+
+| Variable                  | Description                |
+| ------------------------- | -------------------------- |
+| `{{StateExecutionLog}}`   | Path to execution log      |
+| `{{StateConsoleLog}}`     | Path to console log        |
+| `{{StateCompletedFile}}`  | Path to run-completed.json |
+| `{{StateFile}}`           | Path to run-state.json     |
+| `{{StateWorkflowFile}}`   | Path to run-workflow\.yaml |
+| `{{StateWorkflowFolder}}` | Path to run-modules folder |
+
+### Chunk Mode Variables
+
+Used for distributed scanning with `--chunk` flag:
+
+| Variable          | Description               |
+| ----------------- | ------------------------- |
+| `{{ChunkIndex}}`  | Current chunk index       |
+| `{{ChunkSize}}`   | Number of items per chunk |
+| `{{TotalChunks}}` | Total number of chunks    |
+| `{{ChunkStart}}`  | Start position            |
+| `{{ChunkEnd}}`    | End position              |
+
+### Event Trigger Variables
+
+These variables are only available for event-triggered workflows:
+
+| Variable             | Description                        | Example                      |
+| -------------------- | ---------------------------------- | ---------------------------- |
+| `{{EventEnvelope}}`  | Full event envelope as JSON string | `{"topic":"assets.new",...}` |
+| `{{EventTopic}}`     | Event topic                        | `assets.new`                 |
+| `{{EventSource}}`    | Event source                       | `nuclei`                     |
+| `{{EventDataType}}`  | Event data type                    | `asset`                      |
+| `{{EventTimestamp}}` | Event timestamp                    | `2025-01-15T10:00:00Z`       |
+| `{{EventData}}`      | Event data payload as JSON string  | `{"url":"https://...",...}`  |
+
+## Utility Functions
+
+Utility functions are executed via the Goja JavaScript runtime and can be used in function steps or template expressions.
+
+### File Operations
+
+| Function                                    | Returns   | Description                       |
+| ------------------------------------------- | --------- | --------------------------------- |
+| `fileExists(path)`                          | bool      | Check if file exists              |
+| `fileLength(path)`                          | int       | Count non-empty lines in file     |
+| `dirLength(path)`                           | int       | Count entries in directory        |
+| `fileContains(path, pattern)`               | bool      | Check if file contains pattern    |
+| `regexExtract(path, pattern)`               | \[]string | Extract matching lines from file  |
+| `readFile(path)`                            | string    | Read entire file contents         |
+| `readLines(path)`                           | \[]string | Read file as array of lines       |
+| `removeFile(path)`                          | bool      | Delete a file                     |
+| `removeFolder(path)`                        | bool      | Delete folder recursively         |
+| `rm_rf(path)`                               | bool      | Delete file or folder recursively |
+| `remove_all_except(folder, keep)`           | bool      | Remove all except keep\_file      |
+| `createFolder(path)`                        | bool      | Create folder recursively         |
+| `appendFile(dest, source)`                  | bool      | Append source file to dest        |
+| `moveFile(source, dest)`                    | bool      | Move/rename file                  |
+| `glob(pattern)`                             | \[]string | List files matching glob pattern  |
+| `grep_string(source, str)`                  | string    | Return lines containing string    |
+| `grep_regex(source, pattern)`               | string    | Return lines matching regex       |
+| `grep_string_to_file(dest, source, str)`    | bool      | Write matching lines to file      |
+| `grep_regex_to_file(dest, source, pattern)` | bool      | Write matching lines to file      |
+| `remove_blank_lines(path)`                  | bool      | Remove blank lines in-place       |
+
+### String Operations
+
+| Function                              | Returns   | Description                       |
+| ------------------------------------- | --------- | --------------------------------- |
+| `trim(str)`                           | string    | Trim whitespace                   |
+| `split(str, delim)`                   | \[]string | Split by delimiter                |
+| `join(arr, delim)`                    | string    | Join with delimiter               |
+| `replace(str, old, new)`              | string    | Replace all occurrences           |
+| `contains(str, substr)`               | bool      | Check contains substring          |
+| `startsWith(str, prefix)`             | bool      | Check starts with prefix          |
+| `endsWith(str, suffix)`               | bool      | Check ends with suffix            |
+| `toLowerCase(str)`                    | string    | Convert to lowercase              |
+| `toUpperCase(str)`                    | string    | Convert to uppercase              |
+| `match(str, pattern)`                 | bool      | Check regex match                 |
+| `regex_match(pattern, str)`           | bool      | Check regex match (pattern first) |
+| `cut_with_delim(input, delim, field)` | string    | Extract field (1-indexed)         |
+| `normalize_path(input)`               | string    | Replace special chars with \_     |
+| `clean_sub(path, target?)`            | bool      | Clean and dedupe subdomains       |
+
+### Type Conversion
+
+| Function          | Returns | Description             |
+| ----------------- | ------- | ----------------------- |
+| `parseInt(str)`   | int     | Parse string to integer |
+| `parseFloat(str)` | float   | Parse string to float   |
+| `toString(val)`   | string  | Convert to string       |
+| `toBoolean(val)`  | bool    | Convert to boolean      |
+
+### Utility
+
+| Function            | Returns | Description                |
+| ------------------- | ------- | -------------------------- |
+| `len(val)`          | int     | Get length of string/array |
+| `isEmpty(val)`      | bool    | Check if empty             |
+| `isNotEmpty(val)`   | bool    | Check if not empty         |
+| `printf(message)`   | void    | Print to stdout            |
+| `cat_file(path)`    | void    | Print file content         |
+| `exit(code)`        | void    | Exit with code             |
+| `exec_cmd(command)` | string  | Execute bash command       |
+| `sleep(seconds)`    | void    | Pause execution            |
+
+### Logging
+
+| Function             | Returns | Description              |
+| -------------------- | ------- | ------------------------ |
+| `log_debug(message)` | void    | Log with \[DEBUG] prefix |
+| `log_info(message)`  | void    | Log with \[INFO] prefix  |
+| `log_warn(message)`  | void    | Log with \[WARN] prefix  |
+| `log_error(message)` | void    | Log with \[ERROR] prefix |
+
+### HTTP
+
+| Function                                  | Returns | Description       |
+| ----------------------------------------- | ------- | ----------------- |
+| `httpRequest(url, method, headers, body)` | object  | Make HTTP request |
+| `http_get(url)`                           | object  | HTTP GET request  |
+| `http_post(url, body)`                    | object  | HTTP POST request |
+
+### Generation
+
+| Function               | Returns | Description                |
+| ---------------------- | ------- | -------------------------- |
+| `randomString(length)` | string  | Random alphanumeric string |
+| `uuid()`               | string  | Generate UUID v4           |
+
+### Encoding
+
+| Function            | Returns | Description        |
+| ------------------- | ------- | ------------------ |
+| `base64Encode(str)` | string  | Encode to base64   |
+| `base64Decode(str)` | string  | Decode from base64 |
+
+### Data Query
+
+| Function                    | Returns | Description                  |
+| --------------------------- | ------- | ---------------------------- |
+| `jq(jsonData, query)`       | any     | Extract data using jq syntax |
+| `jq_from_file(path, query)` | any     | jq from JSON file            |
+
+### Notification
+
+| Function                            | Returns | Description            |
+| ----------------------------------- | ------- | ---------------------- |
+| `notifyTelegram(message)`           | bool    | Send Telegram message  |
+| `sendTelegramFile(path, caption?)`  | bool    | Send file to Telegram  |
+| `notifyWebhook(message)`            | bool    | Send to all webhooks   |
+| `sendWebhookEvent(eventType, data)` | bool    | Send event to webhooks |
+
+### CDN/Storage
+
+| Function                                      | Returns      | Description                 |
+| --------------------------------------------- | ------------ | --------------------------- |
+| `cdnUpload(localPath, remotePath)`            | bool         | Upload to cloud storage     |
+| `cdnDownload(remotePath, localPath)`          | bool         | Download from cloud storage |
+| `cdnExists(remotePath)`                       | bool         | Check if file exists        |
+| `cdnDelete(remotePath)`                       | bool         | Delete from cloud storage   |
+| `cdnSyncUpload(localDir, remotePrefix)`       | object       | Sync directory to cloud     |
+| `cdnSyncDownload(remotePrefix, localDir)`     | object       | Sync from cloud             |
+| `cdnGetPresignedURL(remotePath, expiryMins?)` | string       | Generate presigned URL      |
+| `cdnList(prefix?)`                            | \[]object    | List files with metadata    |
+| `cdnStat(remotePath)`                         | object\|null | Get file metadata           |
+
+### Unix Commands
+
+| Function                                | Returns | Description                 |
+| --------------------------------------- | ------- | --------------------------- |
+| `sortUnix(input, output?)`              | bool    | Sort with LC\_ALL=C sort -u |
+| `wgetUnix(url, output?)`                | bool    | Download with wget          |
+| `gitClone(repo, dest?)`                 | bool    | Clone git repository        |
+| `zipUnix(source, dest)`                 | bool    | Create zip archive          |
+| `unzipUnix(source, dest?)`              | bool    | Extract zip archive         |
+| `tarUnix(source, dest)`                 | bool    | Create tar.gz archive       |
+| `untarUnix(source, dest?)`              | bool    | Extract tar.gz archive      |
+| `diffUnix(file1, file2, output?)`       | string  | Compare files               |
+| `sed_string_replace(syntax, src, dest)` | bool    | String replacement          |
+| `sed_regex_replace(syntax, src, dest)`  | bool    | Regex replacement           |
+
+### Archive (Go implementations)
+
+| Function                  | Returns | Description                |
+| ------------------------- | ------- | -------------------------- |
+| `zip_dir(source, dest)`   | bool    | Zip using Go archive/zip   |
+| `unzip_dir(source, dest)` | bool    | Unzip using Go archive/zip |
+
+### Diff
+
+| Function                    | Returns | Description         |
+| --------------------------- | ------- | ------------------- |
+| `extractDiff(file1, file2)` | string  | Lines only in file2 |
+
+### Output
+
+| Function                             | Returns | Description          |
+| ------------------------------------ | ------- | -------------------- |
+| `save_content(content, path)`        | bool    | Save content to file |
+| `jsonl_to_csv(source, dest)`         | bool    | Convert JSONL to CSV |
+| `csv_to_jsonl(source, dest)`         | bool    | Convert CSV to JSONL |
+| `jsonl_unique(source, dest, fields)` | bool    | Deduplicate JSONL    |
+| `jsonl_filter(source, dest, fields)` | bool    | Filter JSONL fields  |
+
+### URL Processing
+
+| Function                              | Returns | Description            |
+| ------------------------------------- | ------- | ---------------------- |
+| `interesting_urls(src, dest, field?)` | bool    | Dedupe and filter URLs |
+
+### Markdown
+
+| Function                                   | Returns | Description              |
+| ------------------------------------------ | ------- | ------------------------ |
+| `render_markdown_from_file(path)`          | string  | Render markdown          |
+| `print_markdown_from_file(path)`           | void    | Print with highlighting  |
+| `convert_jsonl_to_markdown(input, output)` | bool    | JSONL to markdown table  |
+| `convert_csv_to_markdown(path)`            | string  | CSV to markdown table    |
+| `render_markdown_report(template, output)` | bool    | Render report template   |
+| `generate_security_report(template)`       | bool    | Generate security report |
+
+### Database
+
+| Function                                                  | Returns | Description                   |
+| --------------------------------------------------------- | ------- | ----------------------------- |
+| `db_update(table, key, field, value)`                     | bool    | Update database field         |
+| `db_import_asset(workspace, json)`                        | bool    | Import asset (upsert)         |
+| `db_raw_insert_asset(workspace, json)`                    | int     | Insert asset (returns ID)     |
+| `db_import_asset_from_file(workspace, path)`              | int     | Import from JSONL             |
+| `db_import_vuln(workspace, json)`                         | bool    | Import vulnerability          |
+| `db_import_vuln_from_file(workspace, path)`               | int     | Import vulns from JSONL       |
+| `db_total_subdomains(path)`                               | int     | Count and update workspace    |
+| `db_total_urls(path)`                                     | int     | Count and update workspace    |
+| `db_total_assets(path)`                                   | int     | Count and update workspace    |
+| `db_total_vulns(path)`                                    | int     | Count and update workspace    |
+| `db_vuln_critical(path)`                                  | int     | Count critical vulns          |
+| `db_vuln_high(path)`                                      | int     | Count high vulns              |
+| `db_vuln_medium(path)`                                    | int     | Count medium vulns            |
+| `db_vuln_low(path)`                                       | int     | Count low vulns               |
+| `db_total_ips(path)`                                      | int     | Count and update IPs          |
+| `db_total_links(path)`                                    | int     | Count and update links        |
+| `db_total_content(path)`                                  | int     | Count and update content      |
+| `db_total_archive(path)`                                  | int     | Count and update archive      |
+| `runtime_export()`                                        | bool    | Export run state              |
+| `register_artifact(path, type?)`                          | bool    | Register as artifact          |
+| `store_artifact(path)`                                    | bool    | Store as artifact             |
+| `db_select_assets(workspace, format)`                     | string  | Select assets                 |
+| `db_select_assets_filtered(ws, status, type, fmt)`        | string  | Filtered assets               |
+| `db_select_vulnerabilities(workspace, format)`            | string  | Select vulns                  |
+| `db_select_vulnerabilities_filtered(ws, sev, asset, fmt)` | string  | Filtered vulns                |
+| `db_select(sql_query, format)`                            | string  | Execute SELECT                |
+| `db_select_to_file(sql_query, dest)`                      | bool    | SELECT to file                |
+| `db_select_to_jsonl(sql_query, fields, dest)`             | bool    | SELECT to JSONL               |
+| `db_select_total_subdomains()`                            | int     | Get workspace subdomain count |
+| `db_select_total_urls()`                                  | int     | Get workspace URL count       |
+| `db_select_total_assets()`                                | int     | Get workspace asset count     |
+| `db_select_total_vulns()`                                 | int     | Get workspace vuln count      |
+| `db_select_vuln_critical()`                               | int     | Get critical count            |
+| `db_select_vuln_high()`                                   | int     | Get high count                |
+| `db_select_vuln_medium()`                                 | int     | Get medium count              |
+| `db_select_vuln_low()`                                    | int     | Get low count                 |
+| `db_asset_diff(workspace)`                                | string  | Get asset diff JSONL          |
+| `db_vuln_diff(workspace)`                                 | string  | Get vuln diff JSONL           |
+| `db_asset_diff_to_file(workspace, dest)`                  | bool    | Asset diff to file            |
+| `db_vuln_diff_to_file(workspace, dest)`                   | bool    | Vuln diff to file             |
+
+### Environment Functions
+
+| Function                 | Returns | Description                    |
+| ------------------------ | ------- | ------------------------------ |
+| `os_getenv(name)`        | string  | Get environment variable value |
+| `os_setenv(name, value)` | bool    | Set environment variable       |
+
+### Installer Functions
+
+| Function                                        | Returns | Description                          |
+| ----------------------------------------------- | ------- | ------------------------------------ |
+| `go_getter(url, dest)`                          | bool    | Download files/repos using go-getter |
+| `go_getter_with_sshkey(ssh_key, git_url, dest)` | bool    | Clone git repo with SSH key          |
+| `nix_install(package, dest?)`                   | bool    | Install package via Nix              |
+
+### LLM Functions
+
+| Function                                | Returns | Description                                                             |
+| --------------------------------------- | ------- | ----------------------------------------------------------------------- |
+| `llm_invoke(message)`                   | string  | Simple LLM call with direct message                                     |
+| `llm_invoke_custom(message, body_json)` | string  | LLM call with custom POST body template (use `{{message}}` placeholder) |
+| `llm_conversations(msg1, msg2, ...)`    | string  | Multi-turn conversation with `role:content` format messages             |
+
+## Usage Examples
+
+### Using Environment Functions
+
+```yaml theme={null}
+- name: setup-api-key
+  type: function
+  functions:
+    - "os_setenv('API_KEY', '{{api_token}}')"
+    - "log_info('API key configured')"
+
+- name: read-config
+  type: function
+  function: "os_getenv('HOME')"
+  exports:
+    home_dir: "{{_result}}"
+```
+
+### Using Installer Functions
+
+```yaml theme={null}
+- name: install-tools
+  type: function
+  functions:
+    - "go_getter('https://github.com/projectdiscovery/nuclei/releases/download/v3.0.0/nuclei_3.0.0_linux_amd64.zip', '{{Binaries}}')"
+    - "nix_install('subfinder', '{{Binaries}}')"
+
+- name: clone-private-repo
+  type: function
+  function: "go_getter_with_sshkey('~/.ssh/id_rsa', 'git@github.com:user/private-templates.git', '{{Data}}/templates')"
+```
+
+### Database Functions
+
+```yaml theme={null}
+- name: update-stats
+  type: function
+  functions:
+    - "db_total_subdomains('{{Output}}/subdomains.txt')"
+    - "db_total_urls('{{Output}}/urls.txt')"
+    - "db_import_asset_from_file('{{Workspace}}', '{{Output}}/httpx.jsonl')"
+    - "db_import_vuln_from_file('{{Workspace}}', '{{Output}}/nuclei.jsonl')"
+```
+
+### Conditional Logic with Functions
+
+```yaml theme={null}
+- name: check-and-process
+  type: function
+  pre_condition: "fileExists('{{Output}}/results.txt')"
+  function: "fileLength('{{Output}}/results.txt')"
+  exports:
+    result_count: "{{_result}}"
+
+- name: decide-next
+  type: function
+  function: "log_info('Results: ' + {{result_count}})"
+  decision:
+    switch: "{{result_count}}"
+    cases:
+      "0": { goto: _end }
+    default: { goto: process-results }
+```

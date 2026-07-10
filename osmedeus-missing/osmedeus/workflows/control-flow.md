@@ -1,0 +1,647 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Control Flow
+
+> Conditions, routing, and error handling
+
+Control execution with conditions, handlers, and decision routing.
+
+## Pre-Conditions
+
+Skip a step if a condition is false.
+
+```yaml theme={null}
+- name: nuclei-scan
+  type: bash
+  pre_condition: 'fileLength("{{Output}}/live.txt") > 0'
+  command: nuclei -l {{Output}}/live.txt -o {{Output}}/vulns.txt
+```
+
+### Common Conditions
+
+```yaml theme={null}
+# File exists
+pre_condition: 'fileExists("{{Output}}/targets.txt")'
+
+# File has content
+pre_condition: 'fileLength("{{Output}}/hosts.txt") > 0'
+
+# Check export value
+pre_condition: '{{host_count}} > 10'
+
+# Check parameter
+pre_condition: '{{enable_scan}} == "true"'
+
+# Combine conditions
+pre_condition: 'fileExists("{{Output}}/subs.txt") && {{threads}} > 0'
+```
+
+### Condition Functions
+
+| Function                | Description                       |
+| ----------------------- | --------------------------------- |
+| `fileExists(path)`      | True if file exists               |
+| `fileLength(path)`      | Number of non-empty lines         |
+| `dirLength(path)`       | Number of directory entries       |
+| `isEmpty(str)`          | True if string is empty           |
+| `contains(str, substr)` | True if string contains substring |
+
+## Step Dependencies (DAG Execution)
+
+Steps can declare dependencies on other steps using the `depends_on` field. This enables:
+
+* Parallel execution of independent steps
+* Automatic ordering based on dependencies
+* DAG (Directed Acyclic Graph) execution
+
+### Basic Dependencies
+
+```yaml theme={null}
+steps:
+  - name: subfinder
+    type: bash
+    command: "subfinder -d {{Target}} -o {{Output}}/subfinder.txt"
+
+  - name: amass
+    type: bash
+    command: "amass enum -d {{Target}} -o {{Output}}/amass.txt"
+
+  - name: merge-results
+    type: function
+    depends_on:
+      - subfinder
+      - amass
+    functions:
+      - "appendFile('{{Output}}/all-subs.txt', '{{Output}}/subfinder.txt')"
+      - "appendFile('{{Output}}/all-subs.txt', '{{Output}}/amass.txt')"
+```
+
+In this example:
+
+* `subfinder` and `amass` run in parallel (no dependencies)
+* `merge-results` waits for both to complete before executing
+
+### DAG Execution
+
+The executor builds a dependency graph and uses topological sorting (Kahn's algorithm) to determine execution order:
+
+```
+┌───────────┐     ┌───────────┐
+│ subfinder │     │   amass   │
+└─────┬─────┘     └─────┬─────┘
+      │                 │
+      │  ┌──────────────┘
+      │  │
+      ▼  ▼
+┌─────────────┐
+│merge-results│
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ http-probe  │
+└─────────────┘
+```
+
+Steps at the same "level" (no dependencies between them) execute concurrently.
+
+### Multiple Dependencies
+
+```yaml theme={null}
+- name: final-report
+  type: bash
+  depends_on:
+    - vuln-scan
+    - port-scan
+    - screenshot
+  command: "generate-report {{Output}}"
+```
+
+The step waits for all listed dependencies to complete successfully.
+
+### Cascade Failure
+
+If a dependency fails:
+
+1. The dependent step is marked as failed (not executed)
+2. All downstream steps are also marked as failed
+3. Independent branches continue execution
+
+```yaml theme={null}
+# If subfinder fails:
+# - merge-results is skipped
+# - amass continues (independent)
+```
+
+### Dependencies vs Sequential Execution
+
+Without `depends_on`, steps execute sequentially in order:
+
+```yaml theme={null}
+steps:
+  - name: step1     # Runs first
+    type: bash
+    command: "..."
+
+  - name: step2     # Runs second (waits for step1)
+    type: bash
+    command: "..."
+```
+
+With `depends_on`, steps can run in parallel:
+
+```yaml theme={null}
+steps:
+  - name: step1     # Runs first (parallel with step2)
+    type: bash
+    command: "..."
+
+  - name: step2     # Runs first (parallel with step1)
+    type: bash
+    command: "..."
+
+  - name: step3     # Waits for both
+    type: bash
+    depends_on: [step1, step2]
+    command: "..."
+```
+
+### Linter Validation
+
+The workflow linter validates dependencies:
+
+| Rule                  | Description                             |
+| --------------------- | --------------------------------------- |
+| `invalid-depends-on`  | Dependency references non-existent step |
+| `circular-dependency` | Circular dependencies detected          |
+
+```bash theme={null}
+osmedeus workflow lint my-workflow.yaml
+```
+
+### Flow Module Dependencies
+
+Flows also support `depends_on` for modules:
+
+```yaml theme={null}
+kind: flow
+name: full-pipeline
+
+modules:
+  - name: subdomain-enum
+    path: modules/subdomain-enum.yaml
+
+  - name: port-scan
+    path: modules/port-scan.yaml
+
+  - name: http-probe
+    path: modules/http-probe.yaml
+    depends_on:
+      - subdomain-enum
+      - port-scan
+```
+
+## Decision Routing
+
+Route to different steps based on variable values using switch/case syntax.
+
+```yaml theme={null}
+steps:
+  - name: check-hosts
+    type: bash
+    command: wc -l < {{Output}}/hosts.txt
+    exports:
+      count: "{{stdout}}"
+    decision:
+      switch: "{{count}}"
+      cases:
+        "0": { goto: no-hosts-found }
+      default: { goto: continue-scan }
+
+  - name: no-hosts-found
+    type: function
+    function: log_warning("No hosts found, skipping scan")
+    decision:
+      switch: "true"
+      cases:
+        "true": { goto: _end }    # Special: end workflow
+
+  - name: continue-scan
+    type: bash
+    command: nuclei -l {{Output}}/hosts.txt -t {{Data}}/templates/
+```
+
+### Decision Syntax
+
+```yaml theme={null}
+decision:
+  switch: "{{variable}}"      # Template expression to evaluate
+  cases:                       # Map of values to actions
+    "value1": { goto: step-a }
+    "value2": { goto: step-b }
+  default: { goto: fallback }  # Optional: when no case matches
+```
+
+* `switch`: Template variable evaluated at runtime (exact string match)
+* `cases`: Map of string values to goto targets
+* `default`: Fallback when no case matches (optional)
+* `goto`: Target step name or `_end` to terminate
+
+### Inline Execution in Cases
+
+Cases support running commands or functions inline, not just `goto`:
+
+```yaml theme={null}
+decision:
+  switch: "{{target_type}}"
+  cases:
+    "domain":
+      goto: subdomain-enum
+      command: "echo 'Processing domain target'"
+    "ip":
+      goto: port-scan
+      commands:
+        - "echo 'Processing IP target'"
+        - "mkdir -p {{Output}}/ip-results"
+    "url":
+      function: "log_info('Direct URL target detected')"
+      goto: web-scan
+```
+
+Each `DecisionCase` supports:
+
+| Field       | Description                   |
+| ----------- | ----------------------------- |
+| `goto`      | Target step name or `_end`    |
+| `command`   | Single command to execute     |
+| `commands`  | Multiple commands to execute  |
+| `function`  | Single function to execute    |
+| `functions` | Multiple functions to execute |
+
+### Condition-Based Decision Routing
+
+In addition to switch/case, decisions support `conditions` — an array of JavaScript expressions evaluated at runtime. All matching conditions execute (no short-circuit):
+
+```yaml theme={null}
+- name: smart-routing
+  type: function
+  function: log_info("Evaluating conditions")
+  decision:
+    conditions:
+      - if: "file_length('{{Output}}/subdomains.txt') > 0"
+        goto: process-subdomains
+
+      - if: "file_length('{{Output}}/subdomains.txt') > 100"
+        command: "echo 'Large target set detected'"
+
+      - if: "{{enableNmap}} == 'true' && contains('{{Port}}', '-')"
+        commands:
+          - "nmap -p {{Port}} {{Target}} -oN {{Output}}/nmap.txt"
+          - "echo 'Port range scan complete'"
+
+      - if: "{{scan_mode}} == 'aggressive'"
+        functions:
+          - "log_warning('Aggressive mode enabled')"
+          - "log_info('Increasing thread count')"
+```
+
+#### Condition Fields
+
+| Field       | Required | Description                                           |
+| ----------- | -------- | ----------------------------------------------------- |
+| `if`        | Yes      | JavaScript expression (must evaluate to truthy/falsy) |
+| `goto`      | No       | Target step name or `_end`                            |
+| `command`   | No       | Single command to execute if condition is true        |
+| `commands`  | No       | Multiple commands to execute if condition is true     |
+| `function`  | No       | Single function to execute if condition is true       |
+| `functions` | No       | Multiple functions to execute if condition is true    |
+
+<Note>
+  All matching conditions in the array are executed — there is no short-circuit behavior. If you need exclusive routing, use switch/case instead.
+</Note>
+
+### Special Goto Targets
+
+| Target      | Description              |
+| ----------- | ------------------------ |
+| `_end`      | End workflow immediately |
+| `step-name` | Jump to named step       |
+
+## Success Handlers
+
+Execute actions when a step succeeds.
+
+```yaml theme={null}
+- name: scan
+  type: bash
+  command: nuclei -l {{Output}}/hosts.txt -o {{Output}}/vulns.txt
+  on_success:
+    - action: log
+      message: "Scan completed successfully"
+
+    - action: export
+      key: scan_status
+      value: "completed"
+
+    - action: notify
+      message: "Vulnerability scan finished for {{target}}"
+```
+
+### Available Actions
+
+| Action     | Description        | Parameters     |
+| ---------- | ------------------ | -------------- |
+| `log`      | Log a message      | `message`      |
+| `export`   | Export a value     | `key`, `value` |
+| `run`      | Run a command      | `command`      |
+| `notify`   | Send notification  | `message`      |
+| `continue` | Continue execution | -              |
+
+```yaml theme={null}
+on_success:
+  - action: log
+    message: "Step completed"
+
+  - action: export
+    key: result
+    value: "success"
+
+  - action: run
+    command: echo "Done" >> {{Output}}/log.txt
+
+  - action: notify
+    message: "{{target}} scan finished"
+```
+
+## Error Handlers
+
+Handle step failures.
+
+```yaml theme={null}
+- name: risky-scan
+  type: bash
+  command: aggressive-tool {{target}}
+  on_error:
+    - action: log
+      message: "Scan failed, continuing with fallback"
+
+    - action: continue    # Don't stop workflow
+
+    - action: run
+      command: fallback-tool {{target}}
+```
+
+### Error Action Types
+
+| Action     | Description             |
+| ---------- | ----------------------- |
+| `log`      | Log error message       |
+| `abort`    | Stop workflow (default) |
+| `continue` | Continue to next step   |
+| `run`      | Run recovery command    |
+| `notify`   | Send error notification |
+
+```yaml theme={null}
+on_error:
+  - action: abort       # Stop workflow on error
+
+# OR
+
+on_error:
+  - action: continue    # Ignore error, continue
+```
+
+## Combined Example
+
+```yaml theme={null}
+steps:
+  - name: enumerate
+    type: bash
+    command: subfinder -d {{target}} -o {{Output}}/subs.txt
+    exports:
+      sub_count: "{{stdout}}"
+    on_success:
+      - action: log
+        message: "Found subdomains"
+    on_error:
+      - action: log
+        message: "Enumeration failed"
+      - action: continue
+
+  - name: validate-results
+    type: function
+    function: fileLength("{{Output}}/subs.txt")
+    exports:
+      count: "{{result}}"
+    decision:
+      switch: "{{count}}"
+      cases:
+        "0": { goto: no-results }
+      default: { goto: probe-hosts }
+
+  - name: no-results
+    type: function
+    function: log_warning("No subdomains found for {{target}}")
+    decision:
+      switch: "true"
+      cases:
+        "true": { goto: _end }
+
+  - name: probe-hosts
+    type: bash
+    pre_condition: 'fileLength("{{Output}}/subs.txt") > 0'
+    command: httpx -l {{Output}}/subs.txt -o {{Output}}/live.txt
+    on_success:
+      - action: export
+        key: probe_status
+        value: "done"
+      - action: notify
+        message: "Probing complete for {{target}}"
+    on_error:
+      - action: log
+        message: "HTTP probing failed"
+      - action: abort
+
+  - name: screenshot
+    type: bash
+    pre_condition: 'fileLength("{{Output}}/live.txt") > 0 && {{probe_status}} == "done"'
+    command: gowitness file -f {{Output}}/live.txt -P {{Output}}/screenshots
+```
+
+## Flow-Level Conditions
+
+Conditional module execution in flows:
+
+```yaml theme={null}
+kind: flow
+name: conditional-flow
+
+params:
+  - name: target
+  - name: enable_active
+    default: "false"
+
+modules:
+  - name: passive-recon
+    path: modules/passive.yaml
+
+  - name: active-scan
+    path: modules/active.yaml
+    depends_on: [passive-recon]
+    condition: '{{enable_active}} == "true"'
+
+  - name: vuln-scan
+    path: modules/vuln.yaml
+    depends_on: [passive-recon]
+    condition: 'fileLength("{{Output}}/live.txt") > 0'
+```
+
+## Branching Patterns
+
+### If-Then-Else
+
+```yaml theme={null}
+- name: check
+  type: function
+  function: fileLength("{{Output}}/data.txt")
+  exports:
+    has_data: "{{result}}"
+  decision:
+    switch: "{{has_data}}"
+    cases:
+      "0": { goto: handle-empty }
+    default: { goto: process-data }
+
+- name: process-data
+  type: bash
+  command: process {{Output}}/data.txt
+  decision:
+    switch: "true"
+    cases:
+      "true": { goto: finalize }
+
+- name: handle-empty
+  type: function
+  function: log_warning("No data to process")
+  decision:
+    switch: "true"
+    cases:
+      "true": { goto: finalize }
+
+- name: finalize
+  type: function
+  function: log_info("Workflow complete")
+```
+
+### Early Exit
+
+```yaml theme={null}
+- name: validate
+  type: function
+  function: fileExists("{{Output}}/required.txt")
+  exports:
+    valid: "{{result}}"
+  decision:
+    switch: "{{valid}}"
+    cases:
+      "false": { goto: _end }       # Exit if invalid
+    default: { goto: continue-scan }
+
+- name: continue-scan
+  type: bash
+  command: scan {{target}}
+```
+
+### Loop with Retry
+
+```yaml theme={null}
+- name: attempt-scan
+  type: bash
+  command: flaky-scanner {{target}}
+  exports:
+    attempt: "1"
+    failed: "false"
+  on_error:
+    - action: export
+      key: failed
+      value: "true"
+    - action: continue
+
+- name: retry-check
+  type: function
+  function: log_info("Checking retry status")
+  decision:
+    switch: "{{failed}}"
+    cases:
+      "false": { goto: success }
+      "true": { goto: check-attempts }
+    default: { goto: success }
+
+- name: check-attempts
+  type: function
+  function: log_info("Attempt {{attempt}}")
+  decision:
+    switch: "{{attempt}}"
+    cases:
+      "3": { goto: give-up }
+    default: { goto: retry-scan }
+
+- name: retry-scan
+  type: bash
+  command: flaky-scanner {{target}} --retry
+  exports:
+    attempt: "{{parseInt({{attempt}}) + 1}}"
+  on_error:
+    - action: continue
+  decision:
+    switch: "true"
+    cases:
+      "true": { goto: retry-check }
+```
+
+## Best Practices
+
+1. **Always check file existence before processing**
+   ```yaml theme={null}
+   pre_condition: 'fileExists("{{Output}}/input.txt")'
+   ```
+
+2. **Use meaningful log messages**
+   ```yaml theme={null}
+   on_success:
+     - action: log
+       message: "Found {{count}} subdomains for {{target}}"
+   ```
+
+3. **Handle errors gracefully**
+   ```yaml theme={null}
+   on_error:
+     - action: log
+       message: "Step failed, attempting fallback"
+     - action: continue
+   ```
+
+4. **Use decision routing for complex logic**
+   ```yaml theme={null}
+   decision:
+     switch: "{{dataset_size}}"
+     cases:
+       "large": { goto: large-dataset-handler }
+     default: { goto: standard-handler }
+   ```
+
+5. **End workflows cleanly**
+   ```yaml theme={null}
+   decision:
+     switch: "{{fatal_error}}"
+     cases:
+       "true": { goto: _end }
+   ```
+
+## Next Steps
+
+* [Step Types](step-types) - All step types
+* [Variables](variables) - Exports and conditions
+* [Functions Reference](../functions/reference) - Condition functions

@@ -1,0 +1,602 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Writing Your First Workflow
+
+> YAML-based workflow definitions and execution
+
+<Callout icon="lightbulb-message" color="#FFC107" iconType="regular">
+  You can find comprehensive examples of all available workflow types and steps in the [Workflow test suites here](https://github.com/j3ssie/osmedeus/tree/main/test/testdata/workflows).
+
+  You can also use the skills provided at [osmedeus/osmedeus-skills](https://github.com/osmedeus/osmedeus-skills). These can help your AI agent generate workflows automatically for you.
+</Callout>
+
+This guide walks you through creating workflows in Osmedeus, from basic concepts to advanced patterns.
+
+## Workflow Kinds
+
+Osmedeus supports two workflow kinds:
+
+| Kind     | Purpose                          |
+| -------- | -------------------------------- |
+| `module` | Single execution unit with steps |
+| `flow`   | Orchestrates multiple modules    |
+
+## Basic Structure
+
+### Module Workflow
+
+```yaml theme={null}
+name: my-first-workflow
+kind: module
+description: A simple workflow example
+tags: example,tutorial
+
+params:
+  - name: custom_param
+    required: false
+    default: "default_value"
+
+steps:
+  - name: hello-world
+    type: bash
+    command: echo "Hello, {{Target}}!"
+```
+
+### Flow Workflow
+
+```yaml theme={null}
+name: my-flow
+kind: flow
+description: Orchestrates multiple modules
+
+modules:
+  - name: subdomain-enum
+    path: modules/subdomain-enum.yaml
+
+  - name: port-scan
+    path: modules/port-scan.yaml
+    depends_on:
+      - subdomain-enum
+```
+
+## Step Types
+
+### bash - Execute Shell Commands
+
+```yaml theme={null}
+# Single command
+- name: simple-command
+  type: bash
+  command: echo "Hello {{Target}}"
+
+# Multiple sequential commands
+- name: multiple-commands
+  type: bash
+  commands:
+    - mkdir -p {{Output}}/results
+    - echo "{{Target}}" > {{Output}}/target.txt
+
+# Parallel commands
+- name: parallel-commands
+  type: bash
+  parallel_commands:
+    - 'curl -s https://api1.example.com'
+    - 'curl -s https://api2.example.com'
+
+# Structured arguments (for tools like nuclei)
+- name: nuclei-scan
+  type: bash
+  command: nuclei
+  speed_args: '-c {{threads}}'
+  config_args: '-t /templates'
+  input_args: '-l {{Output}}/urls.txt'
+  output_args: '-o {{Output}}/nuclei.json'
+```
+
+### function - JavaScript Utility Functions
+
+```yaml theme={null}
+# Single function
+- name: check-file
+  type: function
+  function: 'fileExists("{{Output}}/results.txt")'
+
+# Multiple functions
+- name: process-results
+  type: function
+  functions:
+    - 'log_info("Processing results...")'
+    - 'var count = fileLength("{{Output}}/results.txt")'
+    - 'log_info("Found " + count + " results")'
+
+# Parallel functions
+- name: parallel-logging
+  type: function
+  parallel_functions:
+    - 'log_info("Task A")'
+    - 'log_info("Task B")'
+```
+
+### parallel-steps - Run Steps Concurrently
+
+```yaml theme={null}
+- name: parallel-recon
+  type: parallel-steps
+  parallel_steps:
+    - name: subfinder
+      type: bash
+      command: subfinder -d {{Target}} -o {{Output}}/subfinder.txt
+
+    - name: assetfinder
+      type: bash
+      command: assetfinder {{Target}} > {{Output}}/assetfinder.txt
+
+    - name: amass
+      type: bash
+      command: amass enum -passive -d {{Target}} -o {{Output}}/amass.txt
+```
+
+### foreach - Loop Over Input
+
+```yaml theme={null}
+- name: scan-subdomains
+  type: foreach
+  input: "{{Output}}/subdomains.txt"
+  variable: subdomain
+  threads: 10
+
+  step:
+    name: httpx-probe
+    type: bash
+    command: 'httpx -u [[subdomain]] -silent'
+```
+
+**Note:** Use `[[variable]]` syntax inside foreach loops to avoid template conflicts.
+
+### http - Make HTTP Requests
+
+```yaml theme={null}
+- name: api-call
+  type: http
+  url: "https://api.example.com/scan"
+  method: POST
+  headers:
+    Content-Type: application/json
+    Authorization: "Bearer {{api_token}}"
+  request_body: |
+    {
+      "target": "{{Target}}",
+      "options": {"deep": true}
+    }
+  exports:
+    response_data: "{{response.body}}"
+```
+
+### llm - AI-Powered Analysis
+
+```yaml theme={null}
+- name: ai-analysis
+  type: llm
+  messages:
+    - role: system
+      content: "You are a security analyst."
+    - role: user
+      content: "Analyze the scan results for {{Target}}"
+  llm_config:
+    model: gpt-4
+    max_tokens: 1000
+    temperature: 0.7
+  exports:
+    analysis: "{{llm_step_content}}"
+```
+
+### agent - Agentic LLM Execution
+
+```yaml theme={null}
+- name: analyze-target
+  type: agent
+  query: "Enumerate subdomains of {{Target}} and summarize findings."
+  system_prompt: "You are a security reconnaissance agent."
+  max_iterations: 10
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+    - preset: save_content
+  memory:
+    max_messages: 30
+    persist_path: "{{Output}}/agent/conversation.json"
+  exports:
+    findings: "{{agent_content}}"
+```
+
+The agent step type creates an autonomous tool-calling loop. The agent receives a task, plans its approach, calls tools iteratively, and produces a final answer. Key fields:
+
+* `query` — task prompt for the agent
+* `max_iterations` — maximum tool-calling loop iterations (required)
+* `agent_tools` — list of preset or custom tools (e.g., `bash`, `read_file`, `save_content`, `grep_regex`, `http_get`)
+* `memory` — conversation memory configuration
+* `exports` — use `{{agent_content}}` for the final response text
+
+See [Step Types - agent](../workflows/step-types#agent) for the full reference.
+
+## Template Variables
+
+### Built-in Variables
+
+| Variable                    | Description                                     |
+| --------------------------- | ----------------------------------------------- |
+| `{{Target}}`                | Current target                                  |
+| `{{Output}}`                | Output directory for this run                   |
+| `{{BaseFolder}}`            | Osmedeus installation directory                 |
+| `{{Binaries}}`              | Binary tools directory                          |
+| `{{Data}}`                  | Data directory (wordlists, etc.)                |
+| `{{Workflows}}`             | Workflows directory                             |
+| `{{Workspaces}}`            | Workspaces directory                            |
+| `{{threads}}`               | Thread count based on tactic                    |
+| `{{Version}}`               | Osmedeus version                                |
+| `{{PlatformOS}}`            | Operating system (`linux`, `darwin`, `windows`) |
+| `{{PlatformArch}}`          | CPU architecture (`amd64`, `arm64`)             |
+| `{{PlatformInDocker}}`      | `"true"` if running in Docker                   |
+| `{{PlatformInKubernetes}}`  | `"true"` if running in Kubernetes               |
+| `{{PlatformCloudProvider}}` | Cloud provider (`aws`, `gcp`, `azure`, `local`) |
+
+### Foreach Loop Variables
+
+Use double brackets `[[variable]]` inside foreach loops:
+
+```yaml theme={null}
+- name: process-items
+  type: foreach
+  input: "{{Output}}/items.txt"
+  variable: item
+  step:
+    type: bash
+    command: 'process [[item]] --output {{Output}}/[[item]].json'
+```
+
+## Exports and Variable Passing
+
+Pass data between steps using exports:
+
+```yaml theme={null}
+- name: count-results
+  type: bash
+  command: wc -l {{Output}}/results.txt | awk '{print $1}'
+  exports:
+    result_count: "output"  # Special: captures stdout
+
+- name: log-count
+  type: function
+  function: 'log_info("Found {{result_count}} results")'
+```
+
+## Decision Routing
+
+Branch workflow execution based on conditions. Decisions support two modes: **switch/case** (exact string matching) and **conditions** (boolean expressions).
+
+### Switch/Case Mode
+
+Match a variable's value against exact strings:
+
+```yaml theme={null}
+- name: detect-type
+  type: bash
+  command: 'detect-target-type {{Target}}'
+  exports:
+    target_type: "output"
+
+  decision:
+    switch: "{{target_type}}"
+    cases:
+      "domain":
+        goto: subdomain-enum
+      "ip":
+        goto: port-scan
+      "url":
+        goto: web-scan
+    default:
+      goto: generic-recon
+
+- name: subdomain-enum
+  type: bash
+  command: subfinder -d {{Target}}
+
+- name: port-scan
+  type: bash
+  command: nmap {{Target}}
+
+# Use goto: _end to terminate workflow early
+```
+
+### Inline Actions in Cases
+
+Each case can run inline commands or functions instead of (or in addition to) a `goto`. When combined with `goto`, inline actions execute first, then the jump happens.
+
+**Available case fields:**
+
+| Field       | Type      | Description                                    |
+| ----------- | --------- | ---------------------------------------------- |
+| `goto`      | string    | Jump to a step by name, or `_end` to terminate |
+| `command`   | string    | Run a single bash command inline               |
+| `commands`  | string\[] | Run multiple bash commands in sequence         |
+| `function`  | string    | Execute a single utility function              |
+| `functions` | string\[] | Execute multiple utility functions in sequence |
+
+```yaml theme={null}
+- name: setup-scan
+  type: bash
+  command: echo "Setting up scan"
+  exports:
+    setup_mode: "{{scan_mode}}"
+  decision:
+    switch: "{{setup_mode}}"
+    cases:
+      "quick":
+        functions:
+          - "log_info('Configuring quick scan')"
+          - "log_info('Quick scan configured')"
+      "deep":
+        functions:
+          - "log_info('Configuring deep scan')"
+          - "log_info('Deep scan configured')"
+        goto: deep-scan-step
+      "custom":
+        command: echo "Running custom setup"
+      "multi":
+        commands:
+          - echo "Step 1: prepare environment"
+          - echo "Step 2: configure tools"
+    default:
+      function: "log_info('Using default scan mode')"
+```
+
+### Conditions Mode
+
+Use JavaScript boolean expressions for more flexible routing. All matching conditions execute (no short-circuit), and the last matching `goto` wins.
+
+```yaml theme={null}
+- name: check-results
+  type: bash
+  command: echo "Checking results"
+  decision:
+    conditions:
+      - if: "{{enable_extra}} && {{target}} != ''"
+        function: "log_info('Extra scanning enabled')"
+        goto: extra-scan
+      - if: "file_length('{{Output}}/results.txt') > 100"
+        functions:
+          - "log_info('Large result set detected')"
+          - "log_info('Switching to batch processing')"
+        goto: batch-process
+      - if: "file_exists('{{Output}}/errors.log')"
+        command: echo "Errors detected, reviewing..."
+```
+
+Conditions support template variables, function calls, and standard JavaScript operators.
+
+## Handlers (on\_success / on\_error)
+
+```yaml theme={null}
+- name: critical-scan
+  type: bash
+  command: 'nuclei -u {{Target}}'
+
+  on_success:
+    - action: log
+      message: "Scan completed for {{Target}}"
+    - action: notify
+      notify: "Scan finished: {{Target}}"
+    - action: export
+      name: scan_status
+      value: "success"
+
+  on_error:
+    - action: log
+      message: "Scan failed for {{Target}}"
+    - action: continue  # Continue despite error
+    # Or: action: abort to stop workflow
+```
+
+## Workflow Hooks
+
+Hooks let you run steps before and after the main workflow execution. Use them for setup, cleanup, notifications, or result post-processing.
+
+```yaml theme={null}
+name: recon-with-hooks
+kind: module
+description: Reconnaissance with setup and cleanup hooks
+
+hooks:
+  pre_scan_steps:
+    - name: setup-workspace
+      type: bash
+      commands:
+        - mkdir -p {{Output}}/results
+        - echo "Scan started at $(date)" > {{Output}}/scan.log
+
+    - name: notify-start
+      type: function
+      function: |
+        generate_event("{{Workspace}}", "scan.started", "workflow", "status", "{{Target}}")
+
+  post_scan_steps:
+    - name: generate-report
+      type: function
+      function: |
+        convert_sarif_to_markdown("{{Output}}/results.sarif", "{{Output}}/report.md")
+
+    - name: notify-complete
+      type: function
+      function: |
+        generate_event("{{Workspace}}", "scan.completed", "workflow", "status", "{{Target}}")
+
+    - name: cleanup-temp
+      type: bash
+      command: rm -rf {{Output}}/tmp
+
+steps:
+  - name: run-scan
+    type: bash
+    command: nuclei -u {{Target}} -sarif-export {{Output}}/results.sarif
+```
+
+### Hook Execution Order
+
+```
+pre_scan_steps  →  steps (main workflow)  →  post_scan_steps
+```
+
+* **pre\_scan\_steps** run before any main steps execute
+* **post\_scan\_steps** run after all main steps complete
+* Both support all step types (bash, function, parallel-steps, foreach, etc.)
+* Hook steps have access to the same template variables as main steps
+
+### Flow-Level Hooks
+
+Hooks also work on flows. They run once around the entire flow, not per module:
+
+```yaml theme={null}
+name: full-recon
+kind: flow
+description: Full recon flow with hooks
+
+hooks:
+  pre_scan_steps:
+    - name: pre-flight-check
+      type: function
+      function: 'log_info("Starting flow for " + "{{Target}}")'
+
+  post_scan_steps:
+    - name: aggregate-results
+      type: bash
+      command: cat {{Output}}/*/findings.txt | sort -u > {{Output}}/all-findings.txt
+
+modules:
+  - name: subdomain-enum
+    path: modules/subdomain-enum.yaml
+  - name: port-scan
+    path: modules/port-scan.yaml
+```
+
+## Runner Configuration
+
+### Host Runner (Default)
+
+```yaml theme={null}
+runner: host  # Runs locally, this is the default
+```
+
+### Docker Runner
+
+```yaml theme={null}
+runner: docker
+runner_config:
+  image: ubuntu:22.04
+  env:
+    API_KEY: "{{api_key}}"
+  volumes:
+    - "{{Output}}:/output"
+  network: host
+  persistent: false
+```
+
+### SSH Runner
+
+```yaml theme={null}
+runner: ssh
+runner_config:
+  host: 192.168.1.100
+  port: 22
+  user: scanner
+  key_file: ~/.ssh/id_rsa
+```
+
+### Per-Step Runner Override
+
+```yaml theme={null}
+- name: docker-step
+  type: bash
+  step_runner: docker
+  step_runner_config:
+    image: projectdiscovery/nuclei:latest
+  command: 'nuclei -u {{Target}}'
+```
+
+## Complete Example
+
+```yaml theme={null}
+name: basic-recon
+kind: module
+description: Basic reconnaissance workflow
+tags: recon,subdomain,fast
+
+params:
+  - name: threads
+    default: "10"
+
+steps:
+  - name: setup
+    type: bash
+    commands:
+      - mkdir -p {{Output}}/subdomains
+      - mkdir -p {{Output}}/urls
+
+  - name: passive-enum
+    type: parallel-steps
+    parallel_steps:
+      - name: subfinder
+        type: bash
+        command: subfinder -d {{Target}} -silent -o {{Output}}/subdomains/subfinder.txt
+
+      - name: assetfinder
+        type: bash
+        command: assetfinder --subs-only {{Target}} > {{Output}}/subdomains/assetfinder.txt
+
+  - name: merge-results
+    type: bash
+    commands:
+      - cat {{Output}}/subdomains/*.txt | sort -u > {{Output}}/subdomains.txt
+    exports:
+      subdomain_count: "output"
+
+  - name: probe-http
+    type: foreach
+    input: "{{Output}}/subdomains.txt"
+    variable: sub
+    threads: "{{threads}}"
+    step:
+      name: httpx
+      type: bash
+      command: 'httpx -u [[sub]] -silent >> {{Output}}/urls/live.txt'
+
+  - name: summary
+    type: function
+    functions:
+      - 'var total = fileLength("{{Output}}/subdomains.txt")'
+      - 'var live = fileLength("{{Output}}/urls/live.txt")'
+      - 'log_info("Found " + total + " subdomains, " + live + " live hosts")'
+```
+
+## Running Your Workflow
+
+```bash theme={null}
+# Run a module workflow
+osmedeus run -m basic-recon -t example.com
+
+# Run with custom parameters
+osmedeus run -m basic-recon -t example.com --params 'threads=20'
+
+# Dry run (preview without executing)
+osmedeus run -m basic-recon -t example.com --dry-run
+
+# Run with verbose output
+osmedeus run -m basic-recon -t example.com -v
+```
+
+## Next Steps
+
+* See [CLI References](cli-references.md) for all command options
+* See [Extending Osmedeus](extending-osmedeus.md) to add custom step types
+* See [Advanced Configuration](advanced-configuration.md) for API keys and storage setup

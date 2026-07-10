@@ -136,8 +136,39 @@ nav:
       - FAQ: vigolium/others/faq.md
 
   - "Osmedeus 文档":
-    - "API":
-      - API 概述: osmedeus/api/README.md
+    - 简介: osmedeus/index.md
+    - 快速入门: osmedeus/quickstart.md
+    - "快速开始":
+      - 基础设置: osmedeus/getting-started/basic-setup.md
+      - CLI 界面: osmedeus/getting-started/cli.md
+      - Docker 安装: osmedeus/getting-started/docker-setup.md
+      - Web UI: osmedeus/getting-started/web-ui.md
+    - "体系结构":
+      - 体系结构概述: osmedeus/architecture/index.md
+      - Runners: osmedeus/architecture/runners.md
+      - 模板引擎: osmedeus/architecture/templates.md
+      - 工作流体系结构: osmedeus/architecture/workflows.md
+    - "工作流":
+      - 工作流概述: osmedeus/workflows/overview.md
+      - 步骤类型: osmedeus/workflows/step-types.md
+      - 变量与导出: osmedeus/workflows/variables.md
+      - 控制流: osmedeus/workflows/control-flow.md
+      - Flow 工作流: osmedeus/workflows/flows.md
+    - "高级配置":
+      - API 密钥设置: osmedeus/advanced/api-key-configuration.md
+      - 部署: osmedeus/advanced/deployment.md
+      - 开发: osmedeus/advanced/development.md
+      - 分布式执行: osmedeus/advanced/distributed.md
+      - 事件驱动: osmedeus/advanced/event-driven.md
+      - 作为库使用: osmedeus/advanced/library.md
+      - LLM 与 Agent 集成: osmedeus/advanced/llm.md
+      - 通知与 CDN 设置: osmedeus/advanced/notification-and-cdn.md
+      - 调度与队列: osmedeus/advanced/scheduling.md
+      - 快照: osmedeus/advanced/snapshots.md
+      - 编写第一个工作流: osmedeus/advanced/writing-your-first-workflow.md
+    - "API 参考":
+      - API 参考概述: osmedeus/api-references/index.md
+      - API 端点: osmedeus/api/README.md
       - 安装: osmedeus/api/install.md
       - 身份验证: osmedeus/api/authentication.md
       - 运行: osmedeus/api/runs.md
@@ -160,11 +191,34 @@ nav:
       - 数据库: osmedeus/api/database.md
       - 公开接口: osmedeus/api/public.md
       - 参考: osmedeus/api/reference.md
+    - "扩展":
+      - CLI 命令: osmedeus/extending/cli-commands.md
+      - 函数: osmedeus/extending/functions.md
+      - Runners: osmedeus/extending/runners.md
+      - 步骤类型: osmedeus/extending/step-types.md
+    - "函数":
+      - 函数概述: osmedeus/functions/overview.md
+      - 函数参考: osmedeus/functions/reference.md
+    - "参考":
+      - 类型参考: osmedeus/reference/types.md
+      - 默认变量: osmedeus/reference/variables.md
+      - 工作流模式参考: osmedeus/reference/workflow-schema.md
     - "云部署":
-      - 云使用指南: osmedeus/cloud/cloud-usage-guide.md
-      - 云使用示例: osmedeus/cloud/cloud-usage-examples.md
-      - 云快速参考: osmedeus/cloud/cloud-quick-reference.md
-      - 云备忘录: osmedeus/cloud/cloud-cheatsheet.md
-      - AWS 供应商: osmedeus/cloud/cloud-provider-aws.md
-      - GCP 供应商: osmedeus/cloud/cloud-provider-gcp.md
-      - Hetzner 供应商: osmedeus/cloud/cloud-provider-hetzner.md
+      - 云使用指南: osmedeus/cloud/usage-guide.md
+      - 云使用示例: osmedeus/cloud/usage-examples.md
+      - 云快速参考: osmedeus/cloud/quick-reference.md
+      - 云备忘录: osmedeus/cloud/cheatsheet.md
+      - AWS 供应商: osmedeus/cloud/provider-aws.md
+      - GCP 供应商: osmedeus/cloud/provider-gcp.md
+      - Hetzner 供应商: osmedeus/cloud/provider-hetzner.md
+      - 云使用指南(旧): osmedeus/cloud/cloud-usage-guide.md
+      - 云使用示例(旧): osmedeus/cloud/cloud-usage-examples.md
+      - 云快速参考(旧): osmedeus/cloud/cloud-quick-reference.md
+      - 云备忘录(旧): osmedeus/cloud/cloud-cheatsheet.md
+      - AWS 供应商(旧): osmedeus/cloud/cloud-provider-aws.md
+      - GCP 供应商(旧): osmedeus/cloud/cloud-provider-gcp.md
+      - Hetzner 供应商(旧): osmedeus/cloud/cloud-provider-hetzner.md
+    - "其他":
+      - FAQ: osmedeus/others/faq.md
+      - Premium Edition: osmedeus/others/premium-edition.md
+      - 安全警告: osmedeus/others/security-warning.md

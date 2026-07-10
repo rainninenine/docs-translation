@@ -1,0 +1,629 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Scheduling & Queue
+
+Automate workflow execution with triggers.
+
+## Trigger Types
+
+| Type     | Description            | Use Case             |
+| -------- | ---------------------- | -------------------- |
+| `cron`   | Time-based scheduling  | Daily/weekly scans   |
+| `event`  | Event-driven execution | React to discoveries |
+| `watch`  | File change detection  | Process new data     |
+| `manual` | On-demand only         | Placeholder trigger  |
+
+## CLI Quick Start
+
+The fastest way to set up scheduling, queuing, and webhooks — no YAML required.
+
+### Schedule a Recurring Scan (`--as-cron`)
+
+Create a cron schedule directly from the `run` command:
+
+```bash theme={null}
+# Schedule a module to run daily at 2 AM
+osmedeus run -m subdomain-enum -t example.com --as-cron '0 2 * * *'
+
+# Schedule a flow to run every 6 hours
+osmedeus run -f full-recon -t example.com --as-cron '0 */6 * * *'
+
+# Schedule with additional parameters
+osmedeus run -m nuclei-scan -t example.com --as-cron '0 0 * * 1' -p threads=20
+```
+
+This creates a schedule record in the database. To activate it, start the server:
+
+```bash theme={null}
+osmedeus serve
+```
+
+List created schedules:
+
+```bash theme={null}
+osmedeus db ls --table schedules
+```
+
+### Queue a Run for Later (`--queue`)
+
+Queue a run for deferred processing instead of executing immediately:
+
+```bash theme={null}
+# Queue a single target
+osmedeus run -m subdomain-enum -t example.com --queue
+
+# Queue multiple targets
+osmedeus run -f full-recon -t example.com -t corp.com --queue
+
+# Queue from a target file
+osmedeus run -m nuclei-scan -T targets.txt --queue
+```
+
+Queued tasks are stored in the database with status `queued`. Process them with:
+
+```bash theme={null}
+# Process queued tasks (one at a time)
+osmedeus worker queue run
+
+# Process with concurrency
+osmedeus worker queue run --concurrency 5
+```
+
+The server also auto-polls for queued tasks when running (every 30s).
+
+### Register a Webhook Trigger (`--as-webhook`)
+
+Create a webhook URL that triggers a run on demand:
+
+```bash theme={null}
+# Register a webhook
+osmedeus run -m subdomain-enum -t example.com --as-webhook
+
+# With an authentication key
+osmedeus run -f full-recon -t example.com --as-webhook --webhook-auth-key mysecretkey
+```
+
+This creates a webhook record and prints the trigger URL. Trigger it with:
+
+```bash theme={null}
+# GET request (simple trigger)
+curl http://localhost:8002/osm/api/webhook-runs/<uuid>/trigger
+
+# With auth key
+curl http://localhost:8002/osm/api/webhook-runs/<uuid>/trigger?key=mysecretkey
+```
+
+Requires `enable_trigger_via_webhook: true` in `osm-settings.yaml` and a running server.
+
+## Queue Management
+
+Full control over queued tasks via the `osmedeus worker queue` subcommands.
+
+### List Queued Tasks
+
+```bash theme={null}
+# List all queued tasks
+osmedeus worker queue list
+
+# JSON output
+osmedeus worker queue list --json
+```
+
+### Create Queued Tasks
+
+An alternative to `--queue` on `osmedeus run`:
+
+```bash theme={null}
+# Queue a flow
+osmedeus worker queue new -f full-recon -t example.com
+
+# Queue a module with multiple targets
+osmedeus worker queue new -m subdomain-enum -t example.com -t corp.com
+
+# Queue from a target file with params
+osmedeus worker queue new -m nuclei-scan -T targets.txt -p threads=20
+```
+
+### Process Queued Tasks
+
+```bash theme={null}
+# Start processing (polls DB every 5s)
+osmedeus worker queue run
+
+# With concurrency
+osmedeus worker queue run --concurrency 5
+
+# With a Redis connection for dual-source polling
+osmedeus worker queue run --redis-url redis://localhost:6379
+```
+
+The queue runner polls the database every 5 seconds. If Redis is configured, it also listens via `BRPOP` for lower latency.
+
+### Server-Side Queue Polling
+
+The server (`osmedeus serve`) automatically polls for queued tasks every 30 seconds. Disable with:
+
+```bash theme={null}
+osmedeus serve --no-queue-polling
+```
+
+## Webhook Management
+
+### List Registered Webhooks
+
+```bash theme={null}
+osmedeus worker webhooks
+```
+
+Displays a table of all registered webhook triggers with their UUIDs, workflow, target, trigger URL, and auth key.
+
+### Triggering Webhooks
+
+Webhooks can be triggered via GET or POST:
+
+```bash theme={null}
+# Simple GET trigger
+curl http://localhost:8002/osm/api/webhook-runs/<uuid>/trigger
+
+# POST with overrides (target, flow, or module)
+curl -X POST http://localhost:8002/osm/api/webhook-runs/<uuid>/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"target": "other.com"}'
+
+# Override the workflow
+curl -X POST http://localhost:8002/osm/api/webhook-runs/<uuid>/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"target": "other.com", "module": "nuclei-scan"}'
+```
+
+POST body fields (all optional — defaults come from the registered webhook):
+
+| Field    | Description                     |
+| -------- | ------------------------------- |
+| `target` | Override the target             |
+| `flow`   | Override with a flow workflow   |
+| `module` | Override with a module workflow |
+
+### Authentication
+
+If a webhook was registered with `--webhook-auth-key`, the key must be provided as a query parameter:
+
+```bash theme={null}
+curl http://localhost:8002/osm/api/webhook-runs/<uuid>/trigger?key=mysecretkey
+```
+
+Requests without the correct key receive a `401 Unauthorized` response.
+
+### Webhook Configuration
+
+Webhook triggering must be enabled in `osm-settings.yaml`:
+
+```yaml theme={null}
+server:
+  enable_trigger_via_webhook: true
+```
+
+## Server Flags
+
+Relevant flags for `osmedeus serve`:
+
+| Flag                  | Description                            |
+| --------------------- | -------------------------------------- |
+| `--no-schedule`       | Disable the cron/watch/event scheduler |
+| `--no-queue-polling`  | Disable background queue task polling  |
+| `--no-event-receiver` | Disable automatic event receiver       |
+| `--no-hot-reload`     | Disable config hot reload              |
+
+## Cron Triggers
+
+Execute workflows on a schedule using cron expressions.
+
+### Workflow Definition
+
+```yaml theme={null}
+kind: module
+name: scheduled-scan
+
+triggers:
+  - name: daily-scan
+    on: cron
+    schedule: "0 2 * * *"    # Daily at 2 AM
+    enabled: true
+
+params:
+  - name: target
+    required: true
+
+steps:
+  - name: scan
+    type: bash
+    command: nuclei -u {{target}}
+```
+
+### Cron Expression Format
+
+```
+┌───────────── minute (0 - 59)
+│ ┌───────────── hour (0 - 23)
+│ │ ┌───────────── day of month (1 - 31)
+│ │ │ ┌───────────── month (1 - 12)
+│ │ │ │ ┌───────────── day of week (0 - 6) (Sunday = 0)
+│ │ │ │ │
+* * * * *
+```
+
+### Common Schedules
+
+| Expression       | Description         |
+| ---------------- | ------------------- |
+| `0 * * * *`      | Every hour          |
+| `0 2 * * *`      | Daily at 2 AM       |
+| `0 0 * * 0`      | Weekly on Sunday    |
+| `0 0 1 * *`      | Monthly on the 1st  |
+| `*/15 * * * *`   | Every 15 minutes    |
+| `0 9-17 * * 1-5` | Hourly 9-5 weekdays |
+
+## Event Triggers
+
+Execute workflows in response to events.
+
+### Workflow Definition
+
+```yaml theme={null}
+kind: module
+name: on-asset-discovered
+
+triggers:
+  - name: new-asset
+    on: event
+    event:
+      topic: "assets.new"
+      filters:
+        - "event.source == 'subfinder'"
+        - "event.data.type == 'subdomain'"
+    input:
+      type: event_data
+      field: "url"
+      name: target
+    enabled: true
+
+steps:
+  - name: probe
+    type: bash
+    command: httpx -u {{target}}
+```
+
+### Event Topics
+
+Topics support glob patterns for flexible matching:
+
+```yaml theme={null}
+event:
+  topic: "assets.*"         # Matches assets.new, assets.updated
+  topic: "*.new"            # Matches assets.new, vulns.new
+  topic: "*"                # Matches all topics
+```
+
+| Topic                 | Description             |
+| --------------------- | ----------------------- |
+| `run.started`         | Workflow run started    |
+| `run.completed`       | Workflow run completed  |
+| `run.failed`          | Workflow run failed     |
+| `step.completed`      | Step completed          |
+| `assets.new`          | New asset discovered    |
+| `vulnerabilities.new` | New vulnerability found |
+
+### Event Filters
+
+JavaScript expressions to filter events:
+
+```yaml theme={null}
+filters:
+  - "event.source == 'nuclei'"
+  - "event.data.severity == 'critical'"
+  - "event.workspace == 'example.com'"
+```
+
+For advanced filtering with utility functions, use `filter_functions`:
+
+```yaml theme={null}
+event:
+  topic: "assets.new"
+  filters:
+    - "event.source == 'httpx'"
+  filter_functions:
+    - "contains(event.data.url, '/api/')"
+    - "!ends_with(event.data.url, '.js')"
+```
+
+See [Event-Driven Triggers](event-driven.mdx) for available filter functions.
+
+### Event Input Mapping
+
+Two syntaxes are supported:
+
+**New exports-style syntax (recommended):**
+
+```yaml theme={null}
+input:
+  target: event_data.url
+  source: event.source
+  description: trim(event_data.desc)
+```
+
+**Legacy syntax:**
+
+```yaml theme={null}
+input:
+  type: event_data
+  field: "target"      # Field in event data
+  name: target         # Workflow parameter name
+```
+
+### Event Template Variables
+
+Event-triggered workflows have access to these template variables:
+
+| Variable             | Description              |
+| -------------------- | ------------------------ |
+| `{{EventEnvelope}}`  | Full JSON event envelope |
+| `{{EventTopic}}`     | Event topic              |
+| `{{EventSource}}`    | Event source             |
+| `{{EventDataType}}`  | Data type                |
+| `{{EventTimestamp}}` | Event timestamp          |
+
+## Watch Triggers
+
+Execute workflows when files change. Uses fsnotify for instant inotify-based file system notifications.
+
+### Workflow Definition
+
+```yaml theme={null}
+kind: module
+name: process-new-targets
+
+triggers:
+  - name: new-targets
+    on: watch
+    path: "/data/targets/"
+    debounce: "500ms"    # Optional: debounce rapid changes
+    input:
+      type: file_path
+      name: target_file
+    enabled: true
+
+steps:
+  - name: process
+    type: foreach
+    input: "{{target_file}}"
+    variable: target
+    step:
+      type: bash
+      command: scan {{target}}
+```
+
+### Watch Configuration
+
+| Field      | Type   | Description                                            |
+| ---------- | ------ | ------------------------------------------------------ |
+| `path`     | string | Directory or file path to watch                        |
+| `debounce` | string | Optional debounce duration (e.g., "500ms", "1s", "2s") |
+
+### Debounce
+
+When files are modified rapidly (e.g., during a write operation), multiple events may fire. Use `debounce` to consolidate rapid changes into a single trigger:
+
+```yaml theme={null}
+triggers:
+  - name: watch-logs
+    on: watch
+    path: "/var/log/scan-results/"
+    debounce: "1s"    # Wait 1 second after last change before triggering
+    enabled: true
+```
+
+The debounce timer resets on each new file event. The workflow only triggers after the specified duration has passed without new events.
+
+### Watch Events
+
+| Event    | Description      |
+| -------- | ---------------- |
+| `create` | New file created |
+| `modify` | File modified    |
+| `delete` | File deleted     |
+| `rename` | File renamed     |
+
+## API Management
+
+### List Schedules
+
+```bash theme={null}
+curl http://localhost:8002/osm/api/schedules \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Create Schedule
+
+```bash theme={null}
+curl -X POST http://localhost:8002/osm/api/schedules \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "daily-scan",
+    "workflow_name": "full-recon",
+    "trigger_type": "cron",
+    "schedule": "0 2 * * *",
+    "input_config": {
+      "target": "example.com"
+    },
+    "is_enabled": true
+  }'
+```
+
+### Enable/Disable
+
+```bash theme={null}
+# Enable
+curl -X POST http://localhost:8002/osm/api/schedules/sched-123/enable \
+  -H "Authorization: Bearer $TOKEN"
+
+# Disable
+curl -X POST http://localhost:8002/osm/api/schedules/sched-123/disable \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Trigger Manually
+
+```bash theme={null}
+curl -X POST http://localhost:8002/osm/api/schedules/sched-123/trigger \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Delete Schedule
+
+```bash theme={null}
+curl -X DELETE http://localhost:8002/osm/api/schedules/sched-123 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Webhook API Endpoints
+
+List registered webhooks (authenticated):
+
+```bash theme={null}
+curl http://localhost:8002/osm/api/webhook-runs/list \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Trigger a webhook (unauthenticated, unless `webhook_auth_key` is set):
+
+```bash theme={null}
+# GET
+curl http://localhost:8002/osm/api/webhook-runs/<uuid>/trigger
+
+# POST with overrides
+curl -X POST http://localhost:8002/osm/api/webhook-runs/<uuid>/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"target": "other.com", "module": "nuclei-scan"}'
+```
+
+## Combined Triggers
+
+A workflow can have multiple triggers:
+
+```yaml theme={null}
+kind: module
+name: flexible-scan
+
+triggers:
+  # Run daily
+  - name: daily
+    on: cron
+    schedule: "0 2 * * *"
+    enabled: true
+
+  # Run on new assets
+  - name: on-asset
+    on: event
+    event:
+      topic: "assets.new"
+    input:
+      type: event_data
+      field: "url"
+      name: target
+    enabled: true
+
+  # Manual trigger placeholder
+  - name: manual
+    on: manual
+    enabled: true
+
+params:
+  - name: target
+    required: true
+
+steps:
+  - name: scan
+    type: bash
+    command: scan {{target}}
+```
+
+## Event Emission
+
+Emit events from workflows:
+
+```yaml theme={null}
+- name: scan
+  type: bash
+  command: nuclei -u {{target}} -o {{Output}}/vulns.json
+  on_success:
+    - action: emit_event
+      topic: "scan.completed"
+      data:
+        target: "{{target}}"
+        results: "{{Output}}/vulns.json"
+```
+
+## Database Storage
+
+Schedules are stored in the database:
+
+```sql theme={null}
+-- schedules table
+id, name, workflow_name, workflow_path, trigger_type,
+schedule, event_topic, watch_path, input_config,
+is_enabled, last_run, next_run, run_count,
+created_at, updated_at
+```
+
+Query schedules:
+
+```bash theme={null}
+osmedeus db query "SELECT * FROM schedules WHERE is_enabled = true"
+```
+
+## Best Practices
+
+1. **Use descriptive trigger names**
+2. **Start with disabled triggers** during testing
+3. **Set reasonable intervals** to avoid overload
+4. **Use event filters** to reduce noise
+5. **Monitor trigger execution** via event logs
+6. **Combine with distributed mode** for scale
+
+## Troubleshooting
+
+### Schedule not running
+
+```bash theme={null}
+# Check if enabled
+curl http://localhost:8002/osm/api/schedules/sched-123
+
+# Check next_run time
+# Ensure server is running
+```
+
+### Events not triggering
+
+```bash theme={null}
+# Check event logs
+curl "http://localhost:8002/osm/api/event-logs?topic=assets.new"
+
+# Verify filter expressions
+```
+
+### Watch not detecting changes
+
+```bash theme={null}
+# Verify path exists
+# Check file permissions
+# Ensure pattern matches
+```
+
+## Next Steps
+
+* [Distributed Execution](distributed.md) - Scale with workers
+* [Server CLI](../cli/server.md) - Server setup
+* [API Overview](../api/overview.md) - Schedule endpoints

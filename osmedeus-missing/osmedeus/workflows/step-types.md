@@ -1,0 +1,977 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Step Types
+
+> Available step types for workflow execution
+
+Osmedeus supports 8 step types for different execution needs.
+
+## Overview
+
+| Type             | Description             | Primary Use                      |
+| ---------------- | ----------------------- | -------------------------------- |
+| `bash`           | Execute shell commands  | Run tools, file operations       |
+| `function`       | Run utility functions   | Conditions, logging, file checks |
+| `foreach`        | Iterate over file lines | Process lists                    |
+| `parallel-steps` | Run steps concurrently  | Parallel tool execution          |
+| `remote-bash`    | Per-step Docker/SSH     | Mixed environments               |
+| `http`           | Make HTTP requests      | API calls, webhooks              |
+| `llm`            | AI-powered processing   | Analysis, summarization          |
+| `agent`          | Agentic LLM execution   | Autonomous tool-calling agents   |
+
+## bash
+
+Execute shell commands.
+
+### Basic Command
+
+```yaml theme={null}
+- name: run-subfinder
+  type: bash
+  command: subfinder -d {{target}} -o {{Output}}/subs.txt
+```
+
+### Multiple Commands (Sequential)
+
+```yaml theme={null}
+- name: setup
+  type: bash
+  commands:
+    - mkdir -p {{Output}}/scans
+    - echo "Starting scan for {{target}}"
+    - date > {{Output}}/start-time.txt
+```
+
+### Parallel Commands
+
+```yaml theme={null}
+- name: run-tools
+  type: bash
+  parallel_commands:
+    - subfinder -d {{target}} -o {{Output}}/subfinder.txt
+    - amass enum -passive -d {{target}} -o {{Output}}/amass.txt
+    - assetfinder {{target}} > {{Output}}/assetfinder.txt
+```
+
+### Structured Arguments
+
+```yaml theme={null}
+- name: nuclei-scan
+  type: bash
+  command: nuclei
+  input_args:
+    - name: target-list
+      flag: -l
+      value: "{{Output}}/live.txt"
+  output_args:
+    - name: output
+      flag: -o
+      value: "{{Output}}/nuclei.txt"
+  config_args:
+    - name: templates
+      flag: -t
+      value: "{{Data}}/templates/cves"
+  speed_args:
+    - name: rate-limit
+      flag: -rl
+      value: "150"
+```
+
+### Save Output to File
+
+```yaml theme={null}
+- name: scan
+  type: bash
+  command: nmap -sV {{target}}
+  std_file: "{{Output}}/nmap-output.txt"
+```
+
+## function
+
+Execute utility functions via Goja JavaScript VM.
+
+### Single Function
+
+```yaml theme={null}
+- name: log-start
+  type: function
+  function: log_info("Starting scan for {{target}}")
+```
+
+### Multiple Functions
+
+```yaml theme={null}
+- name: check-files
+  type: function
+  functions:
+    - log_info("Checking prerequisites")
+    - fileExists("{{Output}}/targets.txt")
+    - log_info("Ready to proceed")
+```
+
+### Parallel Functions
+
+```yaml theme={null}
+- name: parallel-checks
+  type: function
+  parallel_functions:
+    - fileLength("{{Output}}/subs.txt")
+    - fileLength("{{Output}}/urls.txt")
+    - fileLength("{{Output}}/live.txt")
+```
+
+### Use in Conditions
+
+```yaml theme={null}
+- name: run-if-exists
+  type: bash
+  pre_condition: 'fileExists("{{Output}}/targets.txt")'
+  command: nuclei -l {{Output}}/targets.txt
+```
+
+## foreach
+
+Iterate over lines in a file with parallel execution using a worker pool.
+
+### Basic Loop
+
+```yaml theme={null}
+- name: probe-subdomains
+  type: foreach
+  input: "{{Output}}/subdomains.txt"
+  variable: subdomain
+  threads: 10
+  step:
+    name: httpx-probe
+    type: bash
+    command: echo [[subdomain]] | httpx -silent >> {{Output}}/live.txt
+```
+
+### With Nested Variables
+
+```yaml theme={null}
+- name: scan-hosts
+  type: foreach
+  input: "{{Output}}/hosts.txt"
+  variable: host
+  threads: 5
+  step:
+    name: nuclei-scan
+    type: bash
+    command: nuclei -u [[host]] -t {{templates}} -o {{Output}}/nuclei-[[host]].txt
+```
+
+### Bounded Concurrency
+
+The foreach executor uses a worker pool pattern:
+
+```
+┌───────────────────────────────────────────────────┐
+│                  Foreach Executor                  │
+│                                                    │
+│   Input File: subdomains.txt (1000 lines)         │
+│                      │                             │
+│                      ▼                             │
+│   ┌────────────────────────────────────────────┐  │
+│   │            Worker Pool (threads: 10)        │  │
+│   │  ┌────┐ ┌────┐ ┌────┐ ... ┌────┐          │  │
+│   │  │ W1 │ │ W2 │ │ W3 │     │ W10│          │  │
+│   │  └────┘ └────┘ └────┘     └────┘          │  │
+│   └────────────────────────────────────────────┘  │
+│                      │                             │
+│                      ▼                             │
+│   Results collected after all items processed      │
+│                                                    │
+└───────────────────────────────────────────────────┘
+```
+
+* Workers pull items from a shared queue
+* Maximum `threads` items processed concurrently
+* Memory-efficient: doesn't spawn all goroutines upfront
+* Graceful cancellation on context timeout
+
+### Fields
+
+| Field                  | Required | Description                                                       |
+| ---------------------- | -------- | ----------------------------------------------------------------- |
+| `input`                | Yes      | Path to file with items (one per line)                            |
+| `variable`             | Yes      | Variable name for current item                                    |
+| `threads`              | No       | Maximum concurrent iterations (default: 1)                        |
+| `step`                 | Yes      | Step to execute for each item                                     |
+| `variable_pre_process` | No       | Transform each input line before storing (e.g., `trim([[line]])`) |
+
+### Pre-Processing Input
+
+Transform each input line before it is stored in the loop variable:
+
+```yaml theme={null}
+- name: scan-cleaned-hosts
+  type: foreach
+  input: "{{Output}}/hosts.txt"
+  variable: host
+  variable_pre_process: "trim([[line]])"
+  threads: 10
+  step:
+    name: probe
+    type: bash
+    command: httpx -u [[host]] -silent
+```
+
+### Variable Syntax
+
+Use `[[variable]]` (double brackets) for loop variables to avoid conflicts with `{{templates}}`:
+
+```yaml theme={null}
+step:
+  name: scan
+  type: bash
+  # [[subdomain]] - replaced per iteration
+  # {{Output}} - resolved once before loop
+  command: nuclei -u [[subdomain]] -o {{Output}}/result-[[subdomain]].txt
+```
+
+### Nested Foreach
+
+Foreach steps can contain other foreach steps:
+
+```yaml theme={null}
+- name: scan-ports-per-host
+  type: foreach
+  input: "{{Output}}/hosts.txt"
+  variable: host
+  threads: 5
+  step:
+    name: scan-ports
+    type: foreach
+    input: "{{Output}}/ports.txt"
+    variable: port
+    threads: 10
+    step:
+      name: probe
+      type: bash
+      command: nc -zv [[host]] [[port]]
+```
+
+## parallel-steps
+
+Run multiple steps concurrently.
+
+```yaml theme={null}
+- name: parallel-recon
+  type: parallel-steps
+  parallel_steps:
+    - name: subfinder
+      type: bash
+      command: subfinder -d {{target}} -o {{Output}}/subfinder.txt
+
+    - name: amass
+      type: bash
+      command: amass enum -passive -d {{target}} -o {{Output}}/amass.txt
+
+    - name: findomain
+      type: bash
+      command: findomain -t {{target}} -o {{Output}}/findomain.txt
+```
+
+Nested steps can be any type:
+
+```yaml theme={null}
+- name: parallel-checks
+  type: parallel-steps
+  parallel_steps:
+    - name: check-dns
+      type: bash
+      command: dig {{target}}
+
+    - name: log-check
+      type: function
+      function: log_info("Parallel check running")
+
+    - name: probe-hosts
+      type: foreach
+      input: "{{Output}}/subs.txt"
+      variable: sub
+      threads: 5
+      step:
+        type: bash
+        command: echo [[sub]] | httpx
+```
+
+## remote-bash
+
+Execute commands in Docker or SSH without module-level runner.
+
+### Docker Execution
+
+```yaml theme={null}
+- name: docker-nuclei
+  type: remote-bash
+  step_runner: docker
+  step_runner_config:
+    image: projectdiscovery/nuclei:latest
+    volumes:
+      - "{{Output}}:/output"
+    environment:
+      - "API_KEY={{api_key}}"
+  command: nuclei -u {{target}} -o /output/nuclei.txt
+```
+
+### SSH Execution
+
+```yaml theme={null}
+- name: ssh-nmap
+  type: remote-bash
+  step_runner: ssh
+  step_runner_config:
+    host: "{{ssh_host}}"
+    port: 22
+    user: "{{ssh_user}}"
+    key_file: ~/.ssh/scanner_key
+  command: nmap -sV {{target}} -oN /tmp/nmap.txt
+  step_remote_file: /tmp/nmap.txt
+  host_output_file: "{{Output}}/nmap-result.txt"
+```
+
+### Fields
+
+| Field                | Required | Description                       |
+| -------------------- | -------- | --------------------------------- |
+| `step_runner`        | Yes      | `docker` or `ssh`                 |
+| `step_runner_config` | Yes      | Runner configuration              |
+| `command`            | Yes      | Command to execute                |
+| `step_remote_file`   | No       | Remote file to copy back          |
+| `host_output_file`   | No       | Local destination for remote file |
+
+## http
+
+Make HTTP requests with automatic retries and connection pooling.
+
+### Supported Methods
+
+| Method   | Description             |
+| -------- | ----------------------- |
+| `GET`    | Retrieve data (default) |
+| `POST`   | Create/submit data      |
+| `PUT`    | Update/replace resource |
+| `PATCH`  | Partial update          |
+| `DELETE` | Remove resource         |
+
+### GET Request
+
+```yaml theme={null}
+- name: fetch-api
+  type: http
+  url: "https://api.example.com/data/{{target}}"
+  method: GET
+  headers:
+    Authorization: "Bearer {{api_token}}"
+  exports:
+    api_response: "{{fetch_api_http_resp.response_body}}"
+    status: "{{fetch_api_http_resp.status_code}}"
+```
+
+### POST Request
+
+```yaml theme={null}
+- name: submit-scan
+  type: http
+  url: "https://scanner.example.com/api/scan"
+  method: POST
+  headers:
+    Content-Type: application/json
+  request_body: |
+    {
+      "target": "{{target}}",
+      "scan_type": "full"
+    }
+```
+
+### PUT Request
+
+```yaml theme={null}
+- name: update-config
+  type: http
+  url: "https://api.example.com/config/{{target}}"
+  method: PUT
+  headers:
+    Content-Type: application/json
+    Authorization: "Bearer {{api_token}}"
+  request_body: '{"enabled": true}'
+```
+
+### PATCH Request
+
+```yaml theme={null}
+- name: patch-status
+  type: http
+  url: "https://api.example.com/scan/{{scan_id}}"
+  method: PATCH
+  headers:
+    Content-Type: application/json
+  request_body: '{"status": "completed"}'
+```
+
+### DELETE Request
+
+```yaml theme={null}
+- name: remove-entry
+  type: http
+  url: "https://api.example.com/entries/{{entry_id}}"
+  method: DELETE
+  headers:
+    Authorization: "Bearer {{api_token}}"
+```
+
+### Auto-Exported Variables
+
+After HTTP step execution, variables are exported with the pattern `<step_name>_http_resp`:
+
+```yaml theme={null}
+# Access as: {{step_name_http_resp.field}}
+# Fields available:
+#   status_code      - HTTP status code (int)
+#   response_body    - Response body (string)
+#   response_headers - Response headers (map)
+#   content_length   - Response size in bytes (int)
+#   response_time_ms - Request duration in ms (int)
+#   error            - Error message if failed (string or null)
+#   message          - Status message (string)
+```
+
+### HTTP Features
+
+* **Connection Pooling**: Reuses connections for efficiency
+* **Automatic Retries**: Retries on network errors and 5xx responses (up to 3 attempts)
+* **Timeout**: Configurable via step `timeout` field (default: 30s)
+* **Template Support**: Headers and request body support `{{variable}}` interpolation
+
+## llm
+
+AI-powered processing using LLM APIs (OpenAI-compatible).
+
+### Chat Completion
+
+```yaml theme={null}
+- name: analyze-findings
+  type: llm
+  messages:
+    - role: system
+      content: You are a security analyst. Analyze the findings and provide a summary.
+    - role: user
+      content: |
+        Analyze these vulnerability findings:
+        {{readFile("{{Output}}/vulnerabilities.txt")}}
+  exports:
+    analysis: "{{analyze_findings_content}}"
+```
+
+### Message Roles
+
+| Role        | Description                     |
+| ----------- | ------------------------------- |
+| `system`    | System prompt defining behavior |
+| `user`      | User input/question             |
+| `assistant` | Model's previous response       |
+| `tool`      | Tool/function call result       |
+
+### With Tool Calling
+
+Define tools the LLM can invoke (OpenAI-compatible function calling):
+
+```yaml theme={null}
+- name: intelligent-scan
+  type: llm
+  messages:
+    - role: system
+      content: You are a security scanner assistant.
+    - role: user
+      content: Analyze {{target}} and suggest next steps.
+  tools:
+    - type: function
+      function:
+        name: run_scan
+        description: Execute a security scan
+        parameters:
+          type: object
+          properties:
+            scan_type:
+              type: string
+              enum: [port, vuln, web]
+            target:
+              type: string
+              description: Target to scan
+          required:
+            - scan_type
+            - target
+  tool_choice: auto  # auto, none, or {"type": "function", "function": {"name": "run_scan"}}
+```
+
+Tool calls are available in exports as `{{step_name_llm_resp.tool_calls}}`.
+
+### Embeddings
+
+Generate vector embeddings for text:
+
+```yaml theme={null}
+- name: generate-embeddings
+  type: llm
+  is_embedding: true
+  embedding_input:
+    - "{{readFile('{{Output}}/finding1.txt')}}"
+    - "{{readFile('{{Output}}/finding2.txt')}}"
+  exports:
+    embeddings: "{{generate_embeddings_llm_resp.embeddings}}"
+```
+
+### Multimodal Content (Vision)
+
+Include images in messages:
+
+```yaml theme={null}
+- name: analyze-screenshot
+  type: llm
+  messages:
+    - role: user
+      content:
+        - type: text
+          text: "Analyze this application screenshot for security issues"
+        - type: image_url
+          image_url:
+            url: "{{Output}}/screenshot.png"
+```
+
+### Structured Output (JSON Schema)
+
+Force structured JSON responses:
+
+```yaml theme={null}
+- name: structured-analysis
+  type: llm
+  messages:
+    - role: system
+      content: You are a security analyst.
+    - role: user
+      content: Analyze {{target}} and return structured findings.
+  llm_config:
+    response_format:
+      type: json_schema
+      json_schema:
+        name: security_findings
+        schema:
+          type: object
+          properties:
+            severity:
+              type: string
+              enum: [critical, high, medium, low, info]
+            findings:
+              type: array
+              items:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  description:
+                    type: string
+          required:
+            - severity
+            - findings
+```
+
+### Configuration Override
+
+Override global LLM settings per step:
+
+```yaml theme={null}
+- name: custom-llm
+  type: llm
+  llm_config:
+    model: gpt-4-turbo
+    max_tokens: 4000
+    temperature: 0.3
+    top_p: 0.95
+    timeout: 5m
+    max_retries: 5
+    custom_headers:
+      X-Custom-Header: value
+  messages:
+    - role: user
+      content: Analyze {{target}}
+```
+
+### Auto-Exported Variables
+
+After LLM step execution:
+
+```yaml theme={null}
+# Access as: {{step_name_llm_resp.field}} or {{step_name_content}}
+# Fields available in step_name_llm_resp:
+#   id             - Response ID
+#   model          - Model used
+#   content        - Response text (first choice)
+#   finish_reason  - Why generation stopped
+#   role           - Message role
+#   tool_calls     - Tool calls if any (array)
+#   all_contents   - All choices if n > 1
+#   usage          - Token usage (prompt_tokens, completion_tokens, total_tokens)
+#   embeddings     - Embedding vectors (for embedding mode)
+#
+# Shorthand: {{step_name_content}} directly contains the response text
+```
+
+### Provider Rotation
+
+If multiple LLM providers are configured, the executor automatically:
+
+* Rotates to next provider on rate limits or errors
+* Retries up to `max_retries * provider_count` times
+* Records rate limit metrics for monitoring
+
+## agent
+
+Agentic LLM execution with an autonomous tool-calling loop. The agent receives a task, plans its approach, calls tools iteratively, and produces a final answer.
+
+### Basic Usage
+
+```yaml theme={null}
+- name: analyze-target
+  type: agent
+  query: "Enumerate subdomains of {{Target}} and summarize findings."
+  system_prompt: "You are a security reconnaissance agent."
+  max_iterations: 10
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+    - preset: save_content
+  exports:
+    findings: "{{agent_content}}"
+```
+
+### Preset Tools
+
+The following preset tools are available via the `preset` field:
+
+| Preset             | Description                          |
+| ------------------ | ------------------------------------ |
+| `bash`             | Execute shell commands               |
+| `read_file`        | Read entire file contents            |
+| `read_lines`       | Read specific line range from a file |
+| `file_exists`      | Check if a file exists               |
+| `file_length`      | Count non-empty lines in a file      |
+| `append_file`      | Append content to a file             |
+| `save_content`     | Write content to a file              |
+| `glob`             | Find files matching a glob pattern   |
+| `grep_string`      | Search for literal string in files   |
+| `grep_regex`       | Search for regex pattern in files    |
+| `http_get`         | Make HTTP GET request                |
+| `http_request`     | Make HTTP request (any method)       |
+| `jq`               | Query JSON with jq expressions       |
+| `exec_python`      | Execute inline Python code           |
+| `exec_python_file` | Execute a Python file                |
+| `exec_ts`          | Execute inline TypeScript code       |
+| `exec_ts_file`     | Execute a TypeScript file            |
+| `run_module`       | Run an Osmedeus module               |
+| `run_flow`         | Run an Osmedeus flow                 |
+
+```yaml theme={null}
+agent_tools:
+  - preset: bash
+  - preset: read_file
+  - preset: grep_regex
+  - preset: save_content
+  - preset: http_get
+```
+
+### Custom Tool Handlers
+
+Define custom tools with a handler expression:
+
+```yaml theme={null}
+agent_tools:
+  - preset: bash
+  - name: lookup_whois
+    description: "Look up WHOIS information for a domain"
+    parameters:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: "Domain to query"
+      required: [domain]
+    handler: "exec('whois ' + args.domain)"
+```
+
+### Multi-Goal Queries
+
+Use `queries` for multiple goals evaluated in sequence:
+
+```yaml theme={null}
+- name: multi-task
+  type: agent
+  queries:
+    - "Enumerate subdomains of {{Target}}"
+    - "Probe discovered hosts for HTTP services"
+    - "Summarize all findings"
+  max_iterations: 20
+  agent_tools:
+    - preset: bash
+    - preset: save_content
+```
+
+### Sub-Agents
+
+Spawn specialized sub-agents from the main agent:
+
+```yaml theme={null}
+- name: coordinator
+  type: agent
+  query: "Perform full reconnaissance of {{Target}}"
+  max_iterations: 15
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+  sub_agents:
+    - name: dns-expert
+      description: "DNS enumeration specialist"
+      system_prompt: "You are a DNS enumeration expert."
+      agent_tools:
+        - preset: bash
+        - preset: save_content
+      max_iterations: 5
+    - name: web-scanner
+      description: "Web application scanner"
+      system_prompt: "You are a web security scanner."
+      agent_tools:
+        - preset: bash
+        - preset: http_get
+      max_iterations: 5
+```
+
+The main agent can invoke sub-agents via the auto-generated `spawn_agent` tool.
+
+### Memory Configuration
+
+Control conversation memory for long-running agents:
+
+```yaml theme={null}
+- name: long-task
+  type: agent
+  query: "Perform deep analysis of {{Target}}"
+  max_iterations: 50
+  memory:
+    max_messages: 30
+    summarize_on_truncate: true
+    persist_path: "{{Output}}/agent/conversation.json"
+    resume_path: "{{Output}}/agent/conversation.json"
+  agent_tools:
+    - preset: bash
+    - preset: save_content
+```
+
+| Field                   | Description                                  |
+| ----------------------- | -------------------------------------------- |
+| `max_messages`          | Sliding window size for conversation history |
+| `summarize_on_truncate` | Summarize old messages before removing them  |
+| `persist_path`          | Save conversation to file after completion   |
+| `resume_path`           | Resume from a previous conversation file     |
+
+### Planning Stage
+
+Run a planning prompt before the main execution loop:
+
+```yaml theme={null}
+- name: planned-recon
+  type: agent
+  query: "Execute the reconnaissance plan for {{Target}}"
+  plan_prompt: "Create a step-by-step reconnaissance plan for {{Target}}. Consider subdomain enumeration, port scanning, and service fingerprinting."
+  max_iterations: 15
+  agent_tools:
+    - preset: bash
+    - preset: save_content
+  exports:
+    plan: "{{agent_plan}}"
+    results: "{{agent_content}}"
+```
+
+### Structured Output
+
+Enforce a JSON schema on the agent's final output:
+
+```yaml theme={null}
+- name: structured-recon
+  type: agent
+  query: "Analyze {{Target}} and return structured findings."
+  max_iterations: 10
+  output_schema:
+    type: object
+    properties:
+      target:
+        type: string
+      subdomains:
+        type: array
+        items:
+          type: string
+      open_ports:
+        type: array
+        items:
+          type: integer
+      summary:
+        type: string
+    required: [target, subdomains, summary]
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+```
+
+### Model Selection
+
+Specify preferred models (tried in order before falling back to default):
+
+```yaml theme={null}
+- name: smart-agent
+  type: agent
+  query: "Analyze {{Target}}"
+  models:
+    - claude-sonnet-4-20250514
+    - gpt-4-turbo
+  max_iterations: 10
+  agent_tools:
+    - preset: bash
+```
+
+### Tool Tracing Hooks
+
+Add JavaScript hooks for tool call monitoring:
+
+```yaml theme={null}
+- name: traced-agent
+  type: agent
+  query: "Scan {{Target}}"
+  max_iterations: 10
+  on_tool_start: "log_info('Calling tool: ' + tool_name)"
+  on_tool_end: "log_info('Tool ' + tool_name + ' returned: ' + tool_result.substring(0, 100))"
+  agent_tools:
+    - preset: bash
+    - preset: save_content
+```
+
+### Stop Condition
+
+Evaluate a JS expression after each iteration to stop early:
+
+```yaml theme={null}
+- name: conditional-agent
+  type: agent
+  query: "Find vulnerabilities in {{Target}}"
+  max_iterations: 20
+  stop_condition: "file_exists('{{Output}}/critical-finding.txt')"
+  agent_tools:
+    - preset: bash
+    - preset: save_content
+```
+
+### Parallel Tool Calls
+
+Control whether the agent can execute multiple tool calls in parallel (enabled by default):
+
+```yaml theme={null}
+- name: sequential-agent
+  type: agent
+  query: "Carefully analyze {{Target}}"
+  max_iterations: 10
+  parallel_tool_calls: false  # Force sequential tool execution
+  agent_tools:
+    - preset: bash
+```
+
+### Auto-Exported Variables
+
+After agent step execution, these variables are automatically available:
+
+| Variable                      | Description                                      |
+| ----------------------------- | ------------------------------------------------ |
+| `{{agent_content}}`           | Final agent response text                        |
+| `{{agent_history}}`           | Full conversation history (JSON)                 |
+| `{{agent_iterations}}`        | Number of iterations used                        |
+| `{{agent_total_tokens}}`      | Total tokens consumed                            |
+| `{{agent_prompt_tokens}}`     | Prompt tokens consumed                           |
+| `{{agent_completion_tokens}}` | Completion tokens consumed                       |
+| `{{agent_tool_results}}`      | All tool call results (JSON)                     |
+| `{{agent_plan}}`              | Planning stage output (if `plan_prompt` was set) |
+| `{{agent_goal_results}}`      | Per-goal results (for multi-goal `queries`)      |
+
+### Fields Reference
+
+| Field                 | Required | Description                                                                                    |
+| --------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `query`               | Yes\*    | Task prompt for the agent                                                                      |
+| `queries`             | Yes\*    | Multiple task prompts (alternative to `query`)                                                 |
+| `max_iterations`      | Yes      | Maximum tool-calling loop iterations (must be > 0)                                             |
+| `agent_tools`         | No       | List of preset or custom tools                                                                 |
+| `system_prompt`       | No       | System prompt for the agent                                                                    |
+| `sub_agents`          | No       | Inline sub-agents spawnable via `spawn_agent` tool                                             |
+| `memory`              | No       | Sliding window config (`max_messages`, `summarize_on_truncate`, `persist_path`, `resume_path`) |
+| `models`              | No       | Preferred models tried in order before falling back to default                                 |
+| `output_schema`       | No       | JSON schema enforced on final output                                                           |
+| `plan_prompt`         | No       | Planning stage prompt run before the main loop                                                 |
+| `stop_condition`      | No       | JS expression evaluated after each iteration                                                   |
+| `on_tool_start`       | No       | JS hook expression run before each tool call                                                   |
+| `on_tool_end`         | No       | JS hook expression run after each tool call                                                    |
+| `parallel_tool_calls` | No       | Enable/disable parallel tool execution (default: true)                                         |
+
+\* Either `query` or `queries` is required.
+
+## Common Step Fields
+
+All steps support these fields:
+
+```yaml theme={null}
+- name: step-name              # Required: unique name
+  type: bash                   # Required: step type
+
+  depends_on:                  # Step dependencies (DAG execution)
+    - previous-step-1
+    - previous-step-2
+
+  pre_condition: 'expr'        # Skip if false
+  timeout: 30m                 # Step timeout (e.g., 30s, 30m, 1h, 1d)
+  log: "{{Output}}/step.log"   # Log file path
+
+  exports:                     # Export values
+    var_name: "{{value}}"
+
+  on_success:                  # Success handlers
+    - action: log
+      message: "Done"
+
+  on_error:                    # Error handlers
+    - action: continue
+
+  decision:                    # Conditional routing
+    switch: "{{value}}"
+    cases:
+      "match": { goto: other-step }
+    default: { goto: fallback }
+```
+
+### Field Reference
+
+| Field           | Description                                                                                  |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| `name`          | Required. Unique step identifier                                                             |
+| `type`          | Required. Step type (bash, function, foreach, parallel-steps, remote-bash, http, llm, agent) |
+| `depends_on`    | Array of step names this step depends on (enables parallel execution)                        |
+| `pre_condition` | Expression to evaluate; step skipped if false                                                |
+| `timeout`       | Maximum execution time (default varies by step type)                                         |
+| `log`           | Path to write step output log                                                                |
+| `exports`       | Map of variable names to values to export                                                    |
+| `on_success`    | Actions to execute on successful completion                                                  |
+| `on_error`      | Actions to execute on failure                                                                |
+| `decision`      | Conditional routing based on variable values                                                 |
+
+## Next Steps
+
+* [Variables](variables) - Exports and propagation
+* [Control Flow](control-flow) - Conditions and routing
+* [Functions Reference](../functions/reference) - Available functions

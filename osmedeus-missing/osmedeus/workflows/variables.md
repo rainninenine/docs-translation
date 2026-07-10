@@ -1,0 +1,534 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Variables and Exports
+
+> Data flow and parameter management
+
+Manage data flow between steps using parameters and exports.
+
+## Parameters
+
+### Defining Parameters
+
+```yaml theme={null}
+params:
+  - name: target
+    required: true
+    description: Target domain
+
+  - name: threads
+    default: "10"
+    description: Thread count
+
+  - name: wordlist
+    default: "{{Data}}/wordlists/common.txt"
+```
+
+### Using Parameters
+
+```yaml theme={null}
+steps:
+  - name: scan
+    type: bash
+    command: subfinder -d {{target}} -t {{threads}} -w {{wordlist}}
+```
+
+### Passing Parameters
+
+```bash theme={null}
+# Single parameter
+osmedeus run -m scan -t example.com -p 'threads=20'
+
+# Multiple parameters
+osmedeus run -m scan -t example.com -p 'threads=20' -p 'wordlist=/path/list.txt'
+
+# From file
+osmedeus run -m scan -t example.com -P params.yaml
+```
+
+## Exports
+
+Exports pass values from one step to the next.
+
+### Basic Export
+
+```yaml theme={null}
+steps:
+  - name: count-lines
+    type: bash
+    command: wc -l {{Output}}/hosts.txt | cut -d' ' -f1
+    exports:
+      host_count: "{{stdout}}"
+
+  - name: log-count
+    type: function
+    function: log_info("Found {{host_count}} hosts")
+```
+
+### Export Sources
+
+| Source                   | Description             |
+| ------------------------ | ----------------------- |
+| `{{stdout}}`             | Command standard output |
+| `{{stderr}}`             | Command standard error  |
+| `{{exit_code}}`          | Command exit code       |
+| `{{http_status_code}}`   | HTTP response status    |
+| `{{http_response_body}}` | HTTP response body      |
+| `{{llm_response}}`       | LLM chat response       |
+
+### HTTP Exports
+
+```yaml theme={null}
+- name: api-call
+  type: http
+  url: "https://api.example.com/data"
+  method: GET
+  exports:
+    response_data: "{{http_response_body}}"
+    status: "{{http_status_code}}"
+
+- name: process
+  type: function
+  function: log_info("Status: {{status}}, Data: {{response_data}}")
+```
+
+### Agent Exports
+
+```yaml theme={null}
+- name: analyze
+  type: agent
+  query: "Analyze {{Target}} for vulnerabilities"
+  max_iterations: 10
+  agent_tools:
+    - preset: bash
+    - preset: read_file
+  exports:
+    findings: "{{agent_content}}"
+    token_usage: "{{agent_total_tokens}}"
+```
+
+| Source                        | Description                                      |
+| ----------------------------- | ------------------------------------------------ |
+| `{{agent_content}}`           | Final agent response text                        |
+| `{{agent_history}}`           | Full conversation history (JSON)                 |
+| `{{agent_iterations}}`        | Number of iterations used                        |
+| `{{agent_total_tokens}}`      | Total tokens consumed                            |
+| `{{agent_prompt_tokens}}`     | Prompt tokens consumed                           |
+| `{{agent_completion_tokens}}` | Completion tokens consumed                       |
+| `{{agent_tool_results}}`      | All tool call results (JSON)                     |
+| `{{agent_plan}}`              | Planning stage output (if `plan_prompt` was set) |
+| `{{agent_goal_results}}`      | Per-goal results (for multi-goal `queries`)      |
+
+### Function Exports
+
+```yaml theme={null}
+- name: read-file
+  type: function
+  function: readFile("{{Output}}/data.txt")
+  exports:
+    file_content: "{{result}}"
+
+- name: use-content
+  type: bash
+  command: echo "Content: {{file_content}}"
+```
+
+## Variable Scope
+
+### Step-Level Scope
+
+Exports are available to all subsequent steps:
+
+```yaml theme={null}
+steps:
+  - name: step1
+    type: bash
+    command: echo "value1"
+    exports:
+      var1: "{{stdout}}"
+
+  - name: step2
+    type: bash
+    command: echo "value2"
+    exports:
+      var2: "{{stdout}}"
+
+  - name: step3
+    type: bash
+    command: echo "{{var1}} and {{var2}}"  # Both available
+```
+
+### Foreach Variable Scope
+
+Loop variables use `[[]]` syntax and are only available inside the loop:
+
+```yaml theme={null}
+- name: process-hosts
+  type: foreach
+  input: "{{Output}}/hosts.txt"
+  variable: host
+  step:
+    name: scan
+    type: bash
+    command: nmap [[host]] -o {{Output}}/nmap-[[host]].txt
+    # [[host]] = current iteration value
+    # {{Output}} = regular template variable
+```
+
+## Resolution Order
+
+Variables are resolved in this order:
+
+1. **Exports** from previous steps
+2. **Parameters** from user input
+3. **Built-in variables** (Target, Output, etc.)
+4. **Environment variables**
+
+## Built-in Variables
+
+Osmedeus provides a comprehensive set of built-in variables that are automatically available in all workflows. These variables are recognized by the linter and do not need to be defined.
+
+### Path Variables
+
+| Variable                   | Description                          |
+| -------------------------- | ------------------------------------ |
+| `{{BaseFolder}}`           | Osmedeus installation directory      |
+| `{{Binaries}}`             | Path to tool binaries                |
+| `{{Data}}`                 | Path to data files                   |
+| `{{ExternalData}}`         | Path to external data files          |
+| `{{ExternalConfigs}}`      | Path to external configuration files |
+| `{{ExternalAgentConfigs}}` | Path to agent configuration files    |
+| `{{ExternalAgents}}`       | Path to agent scripts                |
+| `{{ExternalScripts}}`      | Path to external scripts             |
+| `{{Workflows}}`            | Path to workflows directory          |
+| `{{MarkdownTemplates}}`    | Path to markdown templates           |
+| `{{ExternalMarkdowns}}`    | Path to external markdown files      |
+| `{{SnapshotsFolder}}`      | Path to snapshots storage            |
+| `{{Workspaces}}`           | Path to workspaces directory         |
+
+### Target Variables
+
+| Variable          | Description                                 |
+| ----------------- | ------------------------------------------- |
+| `{{Target}}`      | Current scan target                         |
+| `{{target}}`      | Current scan target (lowercase alias)       |
+| `{{TargetFile}}`  | Path to target file (for multi-target runs) |
+| `{{TargetSpace}}` | Sanitized target (filesystem safe)          |
+
+### Output Variables
+
+| Variable        | Description                                  |
+| --------------- | -------------------------------------------- |
+| `{{Output}}`    | Workspace output directory                   |
+| `{{output}}`    | Workspace output directory (lowercase alias) |
+| `{{Workspace}}` | Workspace directory                          |
+| `{{workspace}}` | Workspace directory (lowercase alias)        |
+
+### Thread Variables
+
+| Variable          | Description                    |
+| ----------------- | ------------------------------ |
+| `{{threads}}`     | Thread count (based on tactic) |
+| `{{Threads}}`     | Thread count (uppercase alias) |
+| `{{baseThreads}}` | Base thread count              |
+
+### Metadata Variables
+
+| Variable           | Description                                         |
+| ------------------ | --------------------------------------------------- |
+| `{{Version}}`      | Osmedeus version                                    |
+| `{{TaskDate}}`     | Task date                                           |
+| `{{TaskID}}`       | Unique task identifier                              |
+| `{{TimeStamp}}`    | Unix timestamp                                      |
+| `{{CurrentTime}}`  | Current time                                        |
+| `{{Today}}`        | Current date (YYYY-MM-DD)                           |
+| `{{RandomString}}` | Random 6-character string                           |
+| `{{ModuleName}}`   | Current module name                                 |
+| `{{FlowName}}`     | Parent flow name (empty if running module directly) |
+| `{{RunUUID}}`      | Unique run identifier (UUID)                        |
+| `{{DBRunID}}`      | Database run ID                                     |
+
+### State File Variables
+
+| Variable                  | Description                    |
+| ------------------------- | ------------------------------ |
+| `{{StateExecutionLog}}`   | Path to execution log          |
+| `{{StateConsoleLog}}`     | Path to console log            |
+| `{{StateCompletedFile}}`  | Path to completion marker file |
+| `{{StateFile}}`           | Path to state file             |
+| `{{StateWorkflowFile}}`   | Path to workflow state file    |
+| `{{StateWorkflowFolder}}` | Path to workflow state folder  |
+
+### Heuristic Variables
+
+These variables are populated by automatic target analysis:
+
+| Variable                  | Description                         |
+| ------------------------- | ----------------------------------- |
+| `{{TargetType}}`          | Detected target type                |
+| `{{TargetRootDomain}}`    | Root domain extracted from target   |
+| `{{TargetTLD}}`           | Top-level domain                    |
+| `{{TargetSLD}}`           | Second-level domain                 |
+| `{{Org}}`                 | Organization (if detected)          |
+| `{{TargetBaseURL}}`       | Base URL of target                  |
+| `{{TargetRootURL}}`       | Root URL of target                  |
+| `{{TargetHostname}}`      | Hostname from target URL            |
+| `{{TargetHost}}`          | Host from target                    |
+| `{{TargetPort}}`          | Port from target URL                |
+| `{{TargetPath}}`          | Path from target URL                |
+| `{{TargetFileExt}}`       | File extension from target URL      |
+| `{{TargetScheme}}`        | URL scheme (http/https)             |
+| `{{TargetIsWildcard}}`    | Whether target is a wildcard        |
+| `{{TargetResolvedIP}}`    | Resolved IP address                 |
+| `{{TargetStatusCode}}`    | HTTP status code from target        |
+| `{{TargetContentLength}}` | Content length from target response |
+| `{{HeuristicsCheck}}`     | Result of heuristics analysis       |
+
+### Platform Variables
+
+Automatically detected environment information:
+
+| Variable                    | Description                                          |
+| --------------------------- | ---------------------------------------------------- |
+| `{{PlatformOS}}`            | Operating system (`linux`, `darwin`, `windows`)      |
+| `{{PlatformArch}}`          | CPU architecture (`amd64`, `arm64`)                  |
+| `{{PlatformInDocker}}`      | `"true"` if running inside a Docker container        |
+| `{{PlatformInKubernetes}}`  | `"true"` if running inside a Kubernetes pod          |
+| `{{PlatformCloudProvider}}` | Cloud provider name (`aws`, `gcp`, `azure`, `local`) |
+
+```yaml theme={null}
+steps:
+  - name: platform-check
+    type: bash
+    pre_condition: '{{PlatformOS}} == "linux"'
+    command: linux-specific-tool {{Target}}
+```
+
+### Event Variables
+
+Available when a workflow is triggered by an event:
+
+| Variable             | Description                      |
+| -------------------- | -------------------------------- |
+| `{{EventEnvelope}}`  | Full event envelope (JSON)       |
+| `{{EventTopic}}`     | Event topic (e.g., `assets.new`) |
+| `{{EventSource}}`    | Source of the event              |
+| `{{EventDataType}}`  | Type of event data               |
+| `{{EventTimestamp}}` | Event timestamp                  |
+
+### Chunk Variables
+
+Used for parallel processing of large inputs:
+
+| Variable          | Description                   |
+| ----------------- | ----------------------------- |
+| `{{ChunkIndex}}`  | Current chunk index           |
+| `{{ChunkSize}}`   | Size of each chunk            |
+| `{{TotalChunks}}` | Total number of chunks        |
+| `{{ChunkStart}}`  | Start offset of current chunk |
+| `{{ChunkEnd}}`    | End offset of current chunk   |
+
+```yaml theme={null}
+params:
+  - name: threads
+    default: "10"
+
+steps:
+  - name: first
+    type: bash
+    command: echo "20"
+    exports:
+      threads: "{{stdout}}"   # Export named 'threads'
+
+  - name: second
+    type: bash
+    command: run -t {{threads}}  # Uses export (20), not param (10)
+```
+
+## Nested Variables
+
+Variables can contain other variables:
+
+```yaml theme={null}
+params:
+  - name: scan_type
+    default: "basic"
+  - name: output_path
+    default: "{{Output}}/{{scan_type}}"
+
+steps:
+  - name: scan
+    type: bash
+    command: scan -o {{output_path}}/results.txt
+    # Resolves to: {{Output}}/basic/results.txt
+```
+
+## Generator Functions
+
+Generate dynamic values for parameters using the `generator` field:
+
+```yaml theme={null}
+params:
+  - name: scan_id
+    generator: "uuid()"
+
+  - name: timestamp
+    generator: "currentTimestamp()"
+
+  - name: user
+    generator: "getEnvVar('USER', 'unknown')"
+
+  - name: run_date
+    generator: "currentDate()"
+```
+
+The `generator` field is evaluated at workflow load time to produce the parameter value.
+
+### Available Generators
+
+| Generator                      | Description                              | Example                        |
+| ------------------------------ | ---------------------------------------- | ------------------------------ |
+| `uuid()`                       | UUID v4                                  | `a1b2c3d4-...`                 |
+| `currentDate(format?)`         | Current date (default: YYYY-MM-DD)       | `2026-02-17`                   |
+| `currentTimestamp()`           | Unix timestamp                           | `1739808000`                   |
+| `getEnvVar(key, default?)`     | Environment variable                     | `getEnvVar('USER', 'unknown')` |
+| `concat(str1, str2, ...)`      | Concatenate strings                      | `concat('scan-', 'target')`    |
+| `randomInt(min?, max?)`        | Random integer (default: 0-100)          | `randomInt(1, 1000)`           |
+| `randomString(length?)`        | Random alphanumeric string (default: 16) | `randomString(8)`              |
+| `execCmd(command)`             | Execute shell command                    | `execCmd('whoami')`            |
+| `toLower(str)`                 | Convert to lowercase                     | `toLower('ABC')`               |
+| `toUpper(str)`                 | Convert to uppercase                     | `toUpper('abc')`               |
+| `trim(str)`                    | Trim whitespace                          | `trim(' hello ')`              |
+| `replace(str, old, new)`       | Replace occurrences                      | `replace('a-b', '-', '_')`     |
+| `split(str, delim, index?)`    | Split and get element                    | `split('a,b,c', ',', 1)`       |
+| `join(delim, str1, str2, ...)` | Join strings with delimiter              | `join('-', 'a', 'b')`          |
+
+## Flow Variable Propagation
+
+### Flow to Module
+
+```yaml theme={null}
+# Flow
+kind: flow
+params:
+  - name: target
+  - name: threads
+    default: "50"
+
+modules:
+  - name: scan
+    path: modules/scan.yaml
+    params:
+      threads: "{{threads}}"   # Pass flow param to module
+```
+
+### Module Exports in Flow
+
+Module exports are not automatically available to other modules. Use shared output files:
+
+```yaml theme={null}
+# Module A writes
+command: subfinder -d {{target}} -o {{Output}}/subs.txt
+
+# Module B reads (depends_on: [A])
+command: httpx -l {{Output}}/subs.txt
+```
+
+## Common Patterns
+
+### Chained Processing
+
+```yaml theme={null}
+steps:
+  - name: enumerate
+    type: bash
+    command: subfinder -d {{target}} -silent
+    exports:
+      raw_subs: "{{stdout}}"
+
+  - name: filter
+    type: function
+    function: |
+      split("{{raw_subs}}", "\n")
+        .filter(s => s.endsWith(".{{target}}"))
+        .join("\n")
+    exports:
+      filtered_subs: "{{result}}"
+
+  - name: save
+    type: bash
+    command: echo "{{filtered_subs}}" > {{Output}}/subs.txt
+```
+
+### Conditional on Export
+
+```yaml theme={null}
+steps:
+  - name: count
+    type: bash
+    command: wc -l < {{Output}}/hosts.txt
+    exports:
+      count: "{{stdout}}"
+
+  - name: scan-if-hosts
+    type: bash
+    pre_condition: '{{count}} > 0'
+    command: nuclei -l {{Output}}/hosts.txt
+```
+
+### Environment Variables
+
+```yaml theme={null}
+params:
+  - name: api_key
+    default: "{{getEnvVar('API_KEY', '')}}"
+
+steps:
+  - name: api-call
+    type: http
+    url: "https://api.example.com/scan"
+    headers:
+      Authorization: "Bearer {{api_key}}"
+```
+
+## Best Practices
+
+1. **Use descriptive export names**
+   ```yaml theme={null}
+   exports:
+     subdomain_count: "{{stdout}}"  # Good
+     x: "{{stdout}}"                # Bad
+   ```
+
+2. **Document parameter meanings**
+   ```yaml theme={null}
+   params:
+     - name: severity
+       default: "high,critical"
+       description: Nuclei severity filter
+   ```
+
+3. **Provide sensible defaults**
+   ```yaml theme={null}
+   params:
+     - name: threads
+       default: "10"   # Works without explicit parameter
+   ```
+
+4. **Use files for large data**
+   ```yaml theme={null}
+   # Good: write to file
+   command: subfinder -d {{target}} -o {{Output}}/subs.txt
+
+   # Avoid: large stdout exports
+   exports:
+     all_subs: "{{stdout}}"  # Could be huge
+   ```
+
+## Next Steps
+
+* [Control Flow](control-flow) - Using exports in conditions
+* [Templates](../concepts/templates) - Template syntax
+* [Functions Reference](../functions/reference) - Available functions

@@ -1,0 +1,447 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Architecture Overview
+
+> Technical architecture overview of the Osmedeus workflow engine
+
+# Architecture Overview
+
+Osmedeus is a workflow engine for security automation. It executes YAML-defined workflows with support for multiple execution environments, distributed processing, and extensive customization.
+
+## Layered Architecture
+
+```
++-------------------------------------------------------------+
+|                     CLI / REST API                          |
+|              (pkg/cli, pkg/server)                          |
++-------------------------------------------------------------+
+                           |
+                           v
++-------------------------------------------------------------+
+|                       Executor                              |
+|              (internal/executor)                            |
+|     Coordinates workflow execution and manages state        |
++-------------------------------------------------------------+
+                           |
+                           v
++-------------------------------------------------------------+
+|                   Step Dispatcher                           |
+|                                                             |
+|  +----------+ +----------+ +----------+ +----------+       |
+|  |   Bash   | | Function | | Parallel | | Foreach  |       |
+|  | Executor | | Executor | | Executor | | Executor |       |
+|  +----------+ +----------+ +----------+ +----------+       |
+|                                                             |
+|  +----------+ +----------+ +----------+ +----------+       |
+|  |  Remote  | |   HTTP   | |   LLM    | | Fragment |       |
+|  |   Bash   | | Executor | | Executor | | Executor |       |
+|  +----------+ +----------+ +----------+ +----------+       |
+|                                                             |
++-------------------------------------------------------------+
+                           |
+                           v
++-------------------------------------------------------------+
+|                        Runner                               |
+|              (internal/runner)                              |
+|                                                             |
+|   +------------+  +------------+  +------------+           |
+|   |    Host    |  |   Docker   |  |    SSH     |           |
+|   |   Runner   |  |   Runner   |  |   Runner   |           |
+|   +------------+  +------------+  +------------+           |
+|                                                             |
++-------------------------------------------------------------+
+```
+
+## Core Packages
+
+| Package              | Purpose                                                                   |
+| -------------------- | ------------------------------------------------------------------------- |
+| `internal/core`      | Type definitions: Workflow, Step, Trigger, RunnerConfig, ExecutionContext |
+| `internal/parser`    | YAML parsing, validation, and caching (Loader)                            |
+| `internal/executor`  | Workflow execution engine with step dispatching                           |
+| `internal/runner`    | Execution environments implementing Runner interface                      |
+| `internal/template`  | `{{Variable}}` interpolation engine (Engine, ShardedEngine)               |
+| `internal/functions` | Utility functions via Goja JavaScript runtime pool                        |
+| `internal/scheduler` | Cron, event, and file-watch triggers                                      |
+| `internal/database`  | SQLite/PostgreSQL via Bun ORM                                             |
+| `internal/linter`    | Workflow validation and linting                                           |
+| `pkg/cli`            | Cobra CLI commands                                                        |
+| `pkg/server`         | Fiber REST API                                                            |
+| `internal/snapshot`  | Workspace export/import as ZIP archives                                   |
+| `internal/installer` | Binary installation (direct-fetch and Nix)                                |
+| `internal/state`     | Run state export for debugging                                            |
+| `internal/updater`   | Self-update via GitHub releases                                           |
+
+## Workflow Execution Flow
+
+```
++-------------------------------------------------------------+
+| 1. CLI parses arguments                                     |
+|    osmedeus run -f general -t example.com                   |
++-------------------------------------------------------------+
+                           |
+                           v
++-------------------------------------------------------------+
+| 2. Load config from ~/osmedeus-base/osm-settings.yaml       |
++-------------------------------------------------------------+
+                           |
+                           v
++-------------------------------------------------------------+
+| 3. Parser loads YAML workflow                               |
+|    - Validates schema                                       |
+|    - Resolves includes (fragments)                          |
+|    - Caches in Loader                                       |
++-------------------------------------------------------------+
+                           |
+                           v
++-------------------------------------------------------------+
+| 4. Executor initializes context                             |
+|    - Injects built-in variables (Target, Output, etc.)      |
+|    - Loads params with defaults                             |
+|    - Creates execution context                              |
++-------------------------------------------------------------+
+                           |
+                           v
++-------------------------------------------------------------+
+| 5. For each step:                                           |
+|    +-----------------------------------------------------+  |
+|    | a. Check depends_on (wait for dependencies)         |  |
+|    | b. Evaluate pre_condition                           |  |
+|    | c. Render templates                                 |  |
+|    | d. Dispatch to appropriate executor                 |  |
+|    | e. Execute via runner                               |  |
+|    | f. Capture output and exports                       |  |
+|    | g. Evaluate decision routing                        |  |
+|    | h. Handle on_success/on_error                       |  |
+|    +-----------------------------------------------------+  |
++-------------------------------------------------------------+
+                           |
+                           v
++-------------------------------------------------------------+
+| 6. Export results                                           |
+|    - Save run state                                         |
+|    - Update database                                        |
+|    - Generate artifacts                                     |
++-------------------------------------------------------------+
+```
+
+## Step Type Routing
+
+The Step Dispatcher routes steps to the appropriate executor based on type:
+
+```
++-------------------------------------------------------------+
+|                    Step Dispatcher                          |
+|                                                             |
+|   Step Type                    Executor                     |
+|   -------------------------------------------------         |
+|   "bash"           ---------> BashExecutor --> Runner       |
+|   "function"       ---------> FunctionExecutor --> Goja     |
+|   "parallel-steps" ---------> ParallelExecutor              |
+|   "foreach"        ---------> ForeachExecutor               |
+|   "remote-bash"    ---------> RemoteBashExecutor --> SSH/Docker |
+|   "http"           ---------> HTTPExecutor                  |
+|   "llm"            ---------> LLMExecutor                   |
+|   "fragment-step"  ---------> FragmentStepExecutor --> Inline |
+|                                                             |
++-------------------------------------------------------------+
+```
+
+## Key Types
+
+### WorkflowKind
+
+```go theme={null}
+const (
+    KindModule   WorkflowKind = "module"   // Single unit workflow
+    KindFlow     WorkflowKind = "flow"     // Orchestrates modules
+    KindFragment WorkflowKind = "fragment" // Reusable step collection
+)
+```
+
+### StepType
+
+```go theme={null}
+const (
+    StepTypeBash         StepType = "bash"
+    StepTypeFunction     StepType = "function"
+    StepTypeParallel     StepType = "parallel-steps"
+    StepTypeForeach      StepType = "foreach"
+    StepTypeRemoteBash   StepType = "remote-bash"
+    StepTypeHTTP         StepType = "http"
+    StepTypeLLM          StepType = "llm"
+    StepTypeFragmentStep StepType = "fragment-step"
+)
+```
+
+### RunnerType
+
+```go theme={null}
+const (
+    RunnerTypeHost   RunnerType = "host"   // Local execution
+    RunnerTypeDocker RunnerType = "docker" // Docker container
+    RunnerTypeSSH    RunnerType = "ssh"    // Remote SSH
+)
+```
+
+### TriggerType
+
+```go theme={null}
+const (
+    TriggerCron   TriggerType = "cron"   // Cron schedule
+    TriggerEvent  TriggerType = "event"  // Event-driven
+    TriggerWatch  TriggerType = "watch"  // File system watch
+    TriggerManual TriggerType = "manual" // CLI execution
+)
+```
+
+## Step Executors
+
+| Executor               | Description               | Runner          |
+| ---------------------- | ------------------------- | --------------- |
+| `BashExecutor`         | Execute shell commands    | Host/Docker/SSH |
+| `FunctionExecutor`     | Execute utility functions | Goja runtime    |
+| `ParallelExecutor`     | Concurrent step execution | Multiple        |
+| `ForeachExecutor`      | Iterate with parallelism  | Multiple        |
+| `RemoteBashExecutor`   | Remote command execution  | Docker/SSH      |
+| `HTTPExecutor`         | HTTP requests             | Built-in        |
+| `LLMExecutor`          | LLM API calls             | Built-in        |
+| `FragmentStepExecutor` | Inline fragment execution | Dispatcher      |
+
+## Template Engine
+
+The template engine provides `{{variable}}` interpolation:
+
+```
++-------------------------------------------------------------+
+|                    Template Engine                          |
+|                                                             |
+|   Input: "nuclei -l {{Output}}/urls.txt -o {{Output}}/out"  |
+|                           |                                 |
+|                           v                                 |
+|   Context: { Output: "/workspaces/example_com" }            |
+|                           |                                 |
+|                           v                                 |
+|   Output: "nuclei -l /workspaces/example_com/urls.txt ..."  |
+|                                                             |
+|   Features:                                                 |
+|   - Standard templates: {{variable}}                        |
+|   - Secondary (foreach): [[variable]]                       |
+|   - Generators: $rand(16), $uuid()                          |
+|   - Sharded caching for high concurrency                    |
+|   - Pre-compiled templates for workflows                    |
+|                                                             |
++-------------------------------------------------------------+
+```
+
+## Function Runtime
+
+Functions are executed via the Goja JavaScript runtime with VM pooling:
+
+```
++-------------------------------------------------------------+
+|                    Goja Runtime Pool                        |
+|                                                             |
+|   +---------+  +---------+  +---------+  +---------+       |
+|   |   VM1   |  |   VM2   |  |   VM3   |  |   VM4   |       |
+|   | (idle)  |  | (busy)  |  | (idle)  |  | (busy)  |       |
+|   +---------+  +---------+  +---------+  +---------+       |
+|                                                             |
+|   Features:                                                 |
+|   - Pool size based on CPU cores                            |
+|   - No global mutex for parallel execution                  |
+|   - Lazy variable loading for conditions                    |
+|   - Context isolation per execution                         |
+|                                                             |
++-------------------------------------------------------------+
+```
+
+## Database Schema
+
+```
++-----------------+     +-----------------+
+|   Workspaces    |     |     Assets      |
++-----------------+     +-----------------+
+| id              |     | id              |
+| name            |     | workspace       |--+
+| target          |     | asset_value     |  |
+| created_at      |     | asset_type      |  |
+| total_subs      |     | url             |  |
+| total_urls      |     | status_code     |  |
+| ...             |     | created_at      |  |
++-----------------+     | updated_at      |  |
+                        +-----------------+  |
++-----------------+                          |
+| Vulnerabilities |                          |
++-----------------+                          |
+| id              |                          |
+| workspace       |--------------------------+
+| asset_value     |
+| vuln_info       |
+| severity        |
+| template_id     |
+| created_at      |
++-----------------+
+```
+
+## Scheduler
+
+The scheduler manages automated workflow triggers:
+
+```
++-------------------------------------------------------------+
+|                       Scheduler                             |
+|                                                             |
+|   Trigger Types:                                            |
+|   +------------------------------------------------------+  |
+|   |  Cron        | Time-based scheduling (cron syntax)   |  |
+|   |  Event       | System events (assets.new, etc.)      |  |
+|   |  Watch       | File system changes (fsnotify)        |  |
+|   |  Manual      | CLI invocation                        |  |
+|   +------------------------------------------------------+  |
+|                                                             |
+|   Event Topics:                                             |
+|   - assets.new         New asset discovered                 |
+|   - vulnerabilities.new New vulnerability found             |
+|   - webhook.received   External webhook received            |
+|   - db.change          Database change event                |
+|   - watch.files        File system change event             |
+|                                                             |
++-------------------------------------------------------------+
+```
+
+## Decision Routing
+
+Steps support conditional branching using switch/case syntax:
+
+```yaml theme={null}
+decision:
+  switch: "{{variable}}"
+  cases:
+    "value1": { goto: step-a }
+    "value2": { goto: step-b }
+  default: { goto: fallback }
+```
+
+Use `goto: _end` to terminate the workflow.
+
+## Plugin Registry Pattern
+
+Step executors are registered in a plugin registry for extensibility:
+
+```go theme={null}
+type StepExecutor interface {
+    Name() string
+    StepTypes() []core.StepType
+    Execute(ctx context.Context, step *core.Step, execCtx *core.ExecutionContext) (*core.StepResult, error)
+    CanHandle(stepType core.StepType) bool
+}
+
+// Registration
+dispatcher.RegisterExecutor(NewBashExecutor())
+dispatcher.RegisterExecutor(NewFunctionExecutor())
+dispatcher.RegisterExecutor(NewFragmentStepExecutor())
+// ...
+```
+
+## Configuration
+
+Configuration is loaded from `~/osmedeus-base/osm-settings.yaml`:
+
+```yaml theme={null}
+general:
+  base_folder: ~/osmedeus-base
+  workspaces_path: ~/workspaces-osmedeus
+  binaries_path: ~/osmedeus-base/external-binaries
+
+database:
+  type: sqlite  # or postgres
+  path: ~/osmedeus-base/osmedeus.db
+
+notification:
+  telegram:
+    bot_token: ""
+    chat_id: ""
+  webhooks: []
+
+cdn:
+  enabled: false
+  provider: s3
+  bucket: ""
+```
+
+## Adding New Features
+
+### New Step Type
+
+1. Add constant in `internal/core/types.go`:
+   ```go theme={null}
+   StepTypeCustom StepType = "custom"
+   ```
+
+2. Create executor implementing `StepExecutor` in `internal/executor/`:
+   ```go theme={null}
+   type CustomExecutor struct {}
+   func (e *CustomExecutor) Name() string { return "custom" }
+   func (e *CustomExecutor) StepTypes() []core.StepType { return []core.StepType{core.StepTypeCustom} }
+   func (e *CustomExecutor) Execute(...) (*core.StepResult, error) { ... }
+   ```
+
+3. Register in `dispatcher.go`:
+   ```go theme={null}
+   dispatcher.RegisterExecutor(NewCustomExecutor())
+   ```
+
+### New Runner
+
+1. Implement Runner interface in `internal/runner/`:
+   ```go theme={null}
+   type CustomRunner struct {}
+   func (r *CustomRunner) Execute(ctx context.Context, cmd string) (string, error) { ... }
+   func (r *CustomRunner) Close() error { ... }
+   ```
+
+2. Add type constant and register in runner factory.
+
+### New Utility Function
+
+1. Add Go implementation in `internal/functions/`:
+   ```go theme={null}
+   func (vf *vmFunc) customFunc(call goja.FunctionCall) goja.Value { ... }
+   ```
+
+2. Add constant in `constants.go`:
+   ```go theme={null}
+   FnCustomFunc = "custom_func"
+   ```
+
+3. Register in `goja_runtime.go`:
+   ```go theme={null}
+   vm.Set(FnCustomFunc, vf.customFunc)
+   ```
+
+### New CLI Command
+
+1. Create in `pkg/cli/`:
+   ```go theme={null}
+   var customCmd = &cobra.Command{
+       Use:   "custom",
+       Short: "Custom command",
+       RunE:  func(cmd *cobra.Command, args []string) error { ... },
+   }
+   ```
+
+2. Add to `rootCmd` in `init()`.
+
+### New API Endpoint
+
+1. Add handler in `pkg/server/handlers/`:
+   ```go theme={null}
+   func CustomHandler(cfg *config.Config) fiber.Handler { ... }
+   ```
+
+2. Register route in `server.go`.
+
+3. Document in `docs/api/`.

@@ -1,0 +1,596 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.osmedeus.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Workflow Architecture
+
+> Deep dive into the Osmedeus workflow system including fragments and linting
+
+# Workflow Architecture
+
+Workflows are the core abstraction in Osmedeus, defining automated security tasks through YAML configuration. This document covers the workflow system architecture, including fragments and the linting system.
+
+## Workflow Kinds
+
+Osmedeus supports three workflow kinds:
+
+| Kind       | Purpose                  | Contains      |
+| ---------- | ------------------------ | ------------- |
+| `module`   | Single execution unit    | Steps array   |
+| `flow`     | Orchestrate modules      | Modules array |
+| `fragment` | Reusable step collection | Steps array   |
+
+```
++-------------------------------------------------------------+
+|                       Flow                                  |
+|  +-------------+  +-------------+  +-------------+          |
+|  |  Module A   |  |  Module B   |  |  Module C   |          |
+|  |  +-------+  |  |  +-------+  |  |  +-------+  |          |
+|  |  | Step  |  |  |  | Step  |  |  |  |Fragment|  |          |
+|  |  | Step  |  |  |  | Step  |  |  |  | Step   |  |          |
+|  |  |Fragment|  |  |  +-------+  |  |  | Step   |  |          |
+|  |  +-------+  |  |              |  |  +-------+  |          |
+|  +-------------+  +-------------+  +-------------+          |
++-------------------------------------------------------------+
+```
+
+## Workflow Structure
+
+### Workflow Type
+
+```go theme={null}
+type Workflow struct {
+    Kind         WorkflowKind  // module, flow, fragment
+    Name         string        // Unique identifier
+    Description  string        // Human-readable description
+    Tags         TagList       // Comma-separated tags
+    Params       []Param       // Input parameters
+    Triggers     []Trigger     // Automated triggers
+    Dependencies *Dependencies // External tool requirements
+    Reports      []Report      // Output reports
+
+    // Execution preferences
+    Preferences  *Preferences  // Optional execution settings
+
+    // Runner configuration (module-kind only)
+    Runner       RunnerType    // host, docker, ssh
+    RunnerConfig *RunnerConfig // Runner-specific config
+
+    // Module-specific fields
+    Steps    []Step           // Execution steps
+    Includes []FragmentInclude // Fragment includes
+
+    // Flow-specific fields
+    Modules  []ModuleRef      // Module references
+
+    // Internal metadata
+    FilePath string           // Source file path
+    Checksum string           // Content checksum
+}
+```
+
+### Step Type
+
+```go theme={null}
+type Step struct {
+    Name         string      // Unique step identifier
+    Type         StepType    // Step type
+    DependsOn    []string    // Step dependencies
+    StepRunner   RunnerType  // Per-step runner override
+    PreCondition string      // Skip if false
+    Log          string      // Log file path
+    Timeout      StepTimeout // Execution timeout
+
+    // Bash step fields
+    Command          string
+    Commands         []string
+    ParallelCommands []string
+    StdFile          string    // Stdout capture file
+
+    // Structured argument fields
+    SpeedArgs  string
+    ConfigArgs string
+    InputArgs  string
+    OutputArgs string
+
+    // Function step fields
+    Function          string
+    Functions         []string
+    ParallelFunctions []string
+
+    // Parallel step fields
+    ParallelSteps []Step
+
+    // Foreach step fields
+    Input    string
+    Variable string
+    Threads  StepThreads
+    Step     *Step
+
+    // Remote-bash step fields
+    StepRunnerConfig *StepRunnerConfig
+    StepRemoteFile   string
+    HostOutputFile   string
+
+    // HTTP step fields
+    URL         string
+    Method      string
+    Headers     map[string]string
+    RequestBody string
+
+    // LLM step fields
+    Messages       []LLMMessage
+    Tools          []LLMTool
+    LLMConfig      *LLMStepConfig
+    IsEmbedding    bool
+    EmbeddingInput []string
+
+    // Fragment-step fields
+    FragmentName string            // Fragment to execute
+    Override     map[string]string // Override parameters
+
+    // Common fields
+    Exports   map[string]string
+    OnSuccess []Action
+    OnError   []Action
+    Decision  *DecisionConfig
+}
+```
+
+## Workflow Inheritance
+
+Workflows support inheritance through the `extends` field, allowing child workflows to inherit and override parent configurations.
+
+### Inheritance Architecture
+
+```
++-------------------------------------------------------------+
+|                  InheritanceResolver                        |
+|                                                             |
+|   Child Workflow                                            |
+|   +---------------------------------------------------------+
+|   | extends: parent-workflow                                |
+|   | override: { params: ..., steps: ... }                   |
+|   +---------------------------------------------------------+
+|                           |                                 |
+|                           v                                 |
+|   +---------------------------------------------------------+
+|   | 1. Check for circular dependency                        |
+|   | 2. Load parent workflow                                 |
+|   | 3. Recursively resolve parent's inheritance             |
+|   | 4. Validate kind compatibility                          |
+|   | 5. Merge parent -> child with overrides                 |
+|   +---------------------------------------------------------+
+|                           |                                 |
+|                           v                                 |
+|   Merged Workflow                                           |
+|   +---------------------------------------------------------+
+|   | All parent fields + child overrides                     |
+|   | ResolvedFrom: "parent-workflow"                         |
+|   +---------------------------------------------------------+
++-------------------------------------------------------------+
+```
+
+### InheritanceResolver Type
+
+```go theme={null}
+type InheritanceResolver struct {
+    loader    *Loader
+    resolving map[string]bool  // Track workflows being resolved (circular detection)
+    childPath string           // Directory of current child (for relative resolution)
+}
+```
+
+### Resolution Process
+
+1. **Circular Detection**: Track workflows being resolved to detect circular inheritance
+2. **Parent Loading**: Load parent by name (same directory) or path (relative/absolute)
+3. **Recursive Resolution**: If parent also extends, resolve recursively
+4. **Kind Validation**: Child and parent must have matching `kind` (module/flow)
+5. **Merge**: Apply child's direct fields and override section
+
+### Override Modes
+
+```go theme={null}
+const (
+    OverrideModeReplace OverrideMode = "replace"   // Replace parent items entirely
+    OverrideModePrepend OverrideMode = "prepend"   // Add child items before parent
+    OverrideModeAppend  OverrideMode = "append"    // Add child items after parent (default)
+    OverrideModeMerge   OverrideMode = "merge"     // Match by name, replace/remove/append
+)
+```
+
+### WorkflowOverride Type
+
+```go theme={null}
+type WorkflowOverride struct {
+    Params       map[string]*ParamOverride  // Override parameter properties
+    Steps        *StepsOverride             // Steps override (modules only)
+    Modules      *ModulesOverride           // Modules override (flows only)
+    Triggers     []Trigger                  // Replace triggers entirely
+    Dependencies *Dependencies              // Merge with parent dependencies
+    Preferences  *Preferences               // Child overrides parent
+    RunnerConfig *RunnerConfig              // Child overrides parent
+    Runner       *RunnerType                // Override runner type
+}
+```
+
+### StepsOverride Type
+
+```go theme={null}
+type StepsOverride struct {
+    Mode    OverrideMode  // replace, prepend, append, merge
+    Steps   []Step        // Steps to add/match
+    Remove  []string      // Step names to remove (merge mode)
+    Replace []Step        // Steps to replace by name (merge mode)
+}
+```
+
+### Merge Priority
+
+```
+Priority: Child direct fields > Child override > Parent
+
+1. Start with clone of parent workflow
+2. Apply child's direct fields (name, description, tags)
+3. Apply override section by mode
+4. Clear extends field to prevent re-resolution
+```
+
+### Parent Resolution Order
+
+1. Same directory as child (name + .yaml/.yml)
+2. Relative path from child's directory
+3. Workflows directory search by name
+4. Absolute path
+
+## Fragments
+
+Fragments are reusable step collections that can be embedded in modules.
+
+### Fragment Definition
+
+```yaml theme={null}
+kind: fragment
+name: notification-fragment
+description: Common notification steps
+params:
+  - name: channel
+    type: string
+    default: "#security-alerts"
+steps:
+  - name: notify
+    type: bash
+    command: notify-send "{{channel}}" "{{message}}"
+```
+
+### Fragment Include
+
+Modules can include fragments using the `includes` field:
+
+```yaml theme={null}
+kind: module
+name: subdomain-enum
+includes:
+  - name: notification-fragment
+    as: notify
+    params:
+      channel: "#recon"
+steps:
+  - name: run-amass
+    type: bash
+    command: amass enum -d {{target}}
+  - name: send-notification
+    type: fragment
+    fragment_name: notify
+    override:
+      message: "Subdomain enumeration complete"
+```
+
+### FragmentInclude Type
+
+```go theme={null}
+type FragmentInclude struct {
+    Name   string            // Fragment workflow name
+    As     string            // Local alias
+    Params map[string]string // Parameter overrides
+}
+```
+
+### Fragment Resolution
+
+1. **Loading**: Fragments are loaded during workflow parsing
+2. **Validation**: Fragment kind must be `fragment`
+3. **Parameter Binding**: Include params merged with fragment defaults
+4. **Step Expansion**: Fragment steps are embedded at execution time
+
+### Fragment Step Type
+
+```go theme={null}
+type Step struct {
+    // ... other fields
+    Type         StepType // "fragment"
+    FragmentName string   // Alias from includes
+    Override     map[string]string // Runtime parameter overrides
+}
+```
+
+### Fragment Execution
+
+When a fragment step is executed:
+
+1. Resolve fragment from includes by alias
+2. Merge override params with include params
+3. Execute fragment steps in sequence
+4. Return combined results
+
+## Linting System
+
+The workflow linter validates YAML workflows for correctness and best practices.
+
+### Linting Architecture
+
+```
++-------------------------------------------------------------+
+|                        Linter                               |
+|                                                             |
+|   YAML Source                                               |
+|   +---------------------------------------------------------+
+|   | kind: module                                            |
+|   | name: my-workflow                                       |
+|   | steps: ...                                              |
+|   +---------------------------------------------------------+
+|                           |                                 |
+|                           v                                 |
+|  +---------------------------------------------------------+
+|  |                   WorkflowAST                           |
+|  |  - Workflow: *core.Workflow                             |
+|  |  - Source: []byte                                       |
+|  |  - Root: ast.Node                                       |
+|  |  - NodeMap: map[string]ast.Node                         |
+|  +---------------------------------------------------------+
+|                           |                                 |
+|                           v                                 |
+|  +---------------------------------------------------------+
+|  |                    Rules                                |
+|  |  +------------------+  +------------------+              |
+|  |  | MissingRequired  |  | DuplicateStepName|              |
+|  |  +------------------+  +------------------+              |
+|  |  +------------------+  +------------------+              |
+|  |  |   EmptyStep      |  | UnusedVariable   |              |
+|  |  +------------------+  +------------------+              |
+|  |  +------------------+  +------------------+              |
+|  |  |  InvalidGoto     |  |InvalidDependsOn  |              |
+|  |  +------------------+  +------------------+              |
+|  |  +------------------+  +------------------+              |
+|  |  |CircularDependency|  |UndefinedVariable |              |
+|  |  +------------------+  +------------------+              |
+|  +---------------------------------------------------------+
+|                           |                                 |
+|                           v                                 |
+|  +---------------------------------------------------------+
+|  |                   LintResult                            |
+|  |  - Issues: []LintIssue                                  |
+|  |  - Errors: int                                          |
+|  |  - Warnings: int                                        |
+|  |  - Infos: int                                           |
+|  +---------------------------------------------------------+
++-------------------------------------------------------------+
+```
+
+### Built-in Rules
+
+| Rule                     | Severity | Description                                |
+| ------------------------ | -------- | ------------------------------------------ |
+| `missing-required-field` | warning  | Required fields (name, kind, type) missing |
+| `duplicate-step-name`    | warning  | Multiple steps with same name              |
+| `empty-step`             | warning  | Step has no executable content             |
+| `unused-variable`        | info     | Variable exported but never used           |
+| `undefined-variable`     | warning  | Variable referenced but not defined        |
+| `invalid-goto`           | warning  | Decision goto references non-existent step |
+| `invalid-depends-on`     | warning  | depends\_on references non-existent step   |
+| `circular-dependency`    | warning  | Circular step dependencies detected        |
+
+### LinterRule Interface
+
+```go theme={null}
+type LinterRule interface {
+    Name() string                    // Unique identifier
+    Description() string             // Human-readable description
+    Severity() Severity              // Default severity
+    Check(ast *WorkflowAST) []LintIssue
+}
+```
+
+### LintIssue Type
+
+```go theme={null}
+type LintIssue struct {
+    Rule       string   // Rule name
+    Severity   Severity // Issue severity
+    Message    string   // Human-readable description
+    Suggestion string   // Fix suggestion
+    Line       int      // 1-based line number
+    Column     int      // 1-based column number
+    Field      string   // YAML path (e.g., "steps[0].bash")
+}
+```
+
+### Running the Linter
+
+#### CLI Usage
+
+```bash theme={null}
+# Validate by name
+osmedeus workflow validate subdomain-enum
+
+# Validate file
+osmedeus workflow lint ./my-workflow.yaml
+
+# Validate folder
+osmedeus workflow validate /path/to/workflows/
+
+# CI mode
+osmedeus workflow lint . --check --format json
+```
+
+#### Output Formats
+
+**Pretty (default)**:
+
+```
+workflows/test.yaml:15:12 warning undefined-variable
+  Variable 'unknown_var' is not defined
+  Suggestion: Check that the variable is defined in params or a previous step's exports
+```
+
+**JSON**:
+
+```json theme={null}
+{
+  "file_path": "workflows/test.yaml",
+  "issues": [
+    {
+      "rule": "undefined-variable",
+      "severity": "warning",
+      "message": "Variable 'unknown_var' is not defined",
+      "line": 15,
+      "column": 12,
+      "field": "steps[2].command"
+    }
+  ]
+}
+```
+
+**GitHub Actions**:
+
+```
+::warning file=workflows/test.yaml,line=15,col=12::undefined-variable: Variable 'unknown_var' is not defined
+```
+
+### Disabling Rules
+
+```bash theme={null}
+# Disable specific rules
+osmedeus workflow lint . --disable unused-variable,empty-step
+```
+
+### Custom Rules
+
+Implement the `LinterRule` interface:
+
+```go theme={null}
+type MyCustomRule struct{}
+
+func (r *MyCustomRule) Name() string { return "my-custom-rule" }
+
+func (r *MyCustomRule) Description() string {
+    return "Description of what this rule checks"
+}
+
+func (r *MyCustomRule) Severity() Severity { return SeverityWarning }
+
+func (r *MyCustomRule) Check(wast *WorkflowAST) []LintIssue {
+    var issues []LintIssue
+    w := wast.Workflow
+
+    // Implement your validation logic
+    for i, step := range w.Steps {
+        if /* condition */ {
+            line, col := wast.FindStepPosition(step.Name)
+            issues = append(issues, LintIssue{
+                Rule:       r.Name(),
+                Severity:   r.Severity(),
+                Message:    "Issue description",
+                Suggestion: "How to fix",
+                Line:       line,
+                Column:     col,
+                Field:      fmt.Sprintf("steps[%d]", i),
+            })
+        }
+    }
+
+    return issues
+}
+
+// Register the rule
+linter := linter.NewDefaultLinter()
+linter.RegisterRule(&MyCustomRule{})
+```
+
+## Decision Routing
+
+Steps support conditional branching:
+
+```yaml theme={null}
+decision:
+  switch: "{{status}}"
+  cases:
+    "critical": { goto: alert-step }
+    "high": { goto: process-high }
+    "none": { goto: _end }
+  default: { goto: continue-step }
+```
+
+### DecisionConfig Type
+
+```go theme={null}
+type DecisionConfig struct {
+    Switch  string                  // Variable to evaluate
+    Cases   map[string]DecisionCase // Case mappings
+    Default *DecisionCase           // Default case
+}
+
+type DecisionCase struct {
+    Goto string // Target step name or "_end"
+}
+```
+
+## Workflow Execution Context
+
+```go theme={null}
+type ExecutionContext struct {
+    RunID         string
+    Target        string
+    Workspace     string
+    Output        string
+    Variables     map[string]interface{}
+    Exports       map[string]interface{}
+    StepResults   map[string]*StepResult
+    Config        *config.Config
+    Runner        runner.Runner
+    TemplateEngine template.TemplateEngine
+    Runtime       *functions.GojaRuntime
+}
+```
+
+## Best Practices
+
+### Workflow Design
+
+1. **Use fragments** for reusable step collections
+2. **Keep modules focused** - Single responsibility
+3. **Use flows** to orchestrate complex pipelines
+4. **Leverage decision routing** for adaptive workflows
+5. **Define dependencies** with `depends_on` for DAG execution
+
+### Performance
+
+1. **Use parallel\_commands** for independent commands
+2. **Use parallel\_functions** for independent function calls
+3. **Set appropriate timeouts** to prevent hanging
+4. **Use foreach** with appropriate thread counts
+
+### Validation
+
+1. **Run linter** before deploying workflows
+2. **Use CI integration** with `--check --format github`
+3. **Enable all rules** during development
+4. **Use type annotations** in params for validation
+
+### Error Handling
+
+1. **Use on\_error handlers** for graceful failures
+2. **Use pre\_condition** to skip steps safely
+3. **Export meaningful error information**
+4. **Log appropriately** for debugging
