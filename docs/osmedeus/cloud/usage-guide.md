@@ -6,11 +6,11 @@
 
 > 配置云基础设施，并在云虚拟机上运行安全工作流或任意命令
 
-<Columns cols={2}>
+
   ![Introduction Cloud](https://mintcdn.com/osmedeus/-AJASvFBPI8cnc5L/images/cloud/osm-cloud-start-scan.png?fit=max&auto=format&n=-AJASvFBPI8cnc5L&q=85&s=a270d5d0a309f935992fd81dd5a26598)
 
   ![web-ui-vuln](https://mintcdn.com/osmedeus/-AJASvFBPI8cnc5L/images/cloud/osm-cloud-auto-sync.png?fit=max&auto=format&n=-AJASvFBPI8cnc5L&q=85&s=9bf1acfb6f020ccfc275c83a7be00f18)
-</Columns>
+
 
 Osmedeus Cloud 可在多个云供应商上配置虚拟机，并在其上运行安全工作流或任意命令。本指南涵盖体系结构、设置和操作模式。
 

@@ -2,9 +2,7 @@
 
 > 重要安全通知与免责声明
 
-<Warning>
-  **重要提示：** Osmedeus 是一款强大的安全自动化工具，旨在您的机器上执行代码。在任何环境中使用 Osmedeus 之前，请仔细阅读本文档。
-</Warning>
+!!! warning "  **重要提示：** Osmedeus 是一款强大的安全自动化工具，旨在您的机器上执行代码。在任何环境中使用 Osmedeus 之前，请仔细阅读本文档。"
 
 ## Overview
 
@@ -71,9 +69,7 @@ YAML 工作流文件是 Osmedeus 自动化的核心。它们可以包含：
 * 实施工作流签名或校验和以进行验证
 * 以最小必要权限运行 Osmedeus
 
-<Note>
-  这与其他工作流引擎（如 Apache Airflow、Argo Workflows、GitHub Actions 和 Jenkins）类似。允许用户执行任意工作流是其设计固有的特性。
-</Note>
+!!! note "  这与其他工作流引擎（如 Apache Airflow、Argo Workflows、GitHub Actions 和 Jenkins）类似。允许用户执行任意工作流是其设计固有的特性。"
 
 ### 3. 外部二进制文件安装
 
@@ -132,9 +128,7 @@ Osmedeus 存储扫描结果、凭据和配置数据：
 
 ## Disclaimer
 
-<Warning>
-  **Osmedeus 仅用于授权的安全测试。** 未经授权使用可能违反您所在司法管辖区的法律。
-</Warning>
+!!! warning "  **Osmedeus 仅用于授权的安全测试。** 未经授权使用可能违反您所在司法管辖区的法律。"
 
 使用 Osmedeus 即表示您确认：
 

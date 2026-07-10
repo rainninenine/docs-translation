@@ -253,9 +253,7 @@ osmedeus workflow lint workflow.yaml --check
 | `invalid-depends-on`       | warning  | 依赖不存在的步骤               |
 | `circular-dependency`      | warning  | 步骤依赖形成循环               |
 
-<Note>
-  `undefined-variable` 规则存在但默认未启用，因为内置变量数量庞大。工作流可以带着 linter 警告执行——linter 旨在帮助识别潜在问题，而非阻止执行。
-</Note>
+!!! note "  `undefined-variable` 规则存在但默认未启用，因为内置变量数量庞大。工作流可以带着 linter 警告执行——linter 旨在帮助识别潜在问题，而非阻止执行。"
 
 ### 严重级别
 

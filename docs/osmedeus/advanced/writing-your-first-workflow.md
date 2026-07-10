@@ -6,11 +6,10 @@
 
 > 基于 YAML 的工作流定义与执行
 
-<Callout icon="lightbulb-message" color="#FFC107" iconType="regular">
-  你可以在[工作流测试套件](https://github.com/j3ssie/osmedeus/tree/main/test/testdata/workflows)中找到所有可用工作流类型和步骤的全面示例。
+!!! tip "  你可以在[工作流测试套件](https://github.com/j3ssie/osmedeus/tree/main/test/testdata/workflows)中找到所有可用工作流类型和步骤的全面示例。
 
   你也可以使用 [osmedeus/osmedeus-skills](https://github.com/osmedeus/osmedeus-skills) 提供的技能。这些技能可以帮助你的 AI 代理自动为你生成工作流。
-</Callout>
+"
 
 本指南将引导你从基本概念到高级模式，逐步创建 Osmedeus 工作流。
 

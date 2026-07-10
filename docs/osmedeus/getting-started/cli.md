@@ -49,11 +49,11 @@ j3ssie ▶ osmedeus -h
 
 ![描述性替代文本](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-with-llm-step.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=966352fbdd154b60dcab8c203f54e9b7)
 
-<Columns cols={2}>
+
   ![描述性替代文本](https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-run-with-verbose-output.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=a254d87b37a7ec88651d9bbf8436be22)
 
   ![描述性替代文本](https://mintcdn.com/osmedeus/rQ49bCQbs9dKARCy/images/cli/cli-run-with-ci-friendly-output.png?fit=max&auto=format&n=rQ49bCQbs9dKARCy&q=85&s=c2d2b2023238bc659a30067eeffadfd0)
-</Columns>
+
 
 ```bash
 

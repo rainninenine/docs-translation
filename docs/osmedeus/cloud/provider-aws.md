@@ -2,11 +2,11 @@
 
 > 在 AWS EC2 实例上运行 osmedeus cloud 的分步指南
 
-<Columns cols={2}>
+
   ![web-ui-vuln](https://mintcdn.com/osmedeus/-AJASvFBPI8cnc5L/images/cloud/osm-cloud-provision.png?fit=max&auto=format&n=-AJASvFBPI8cnc5L&q=85&s=9bc330cde3d3d150e00820521cd3aa9f)
 
   ![web-ui-assets](https://mintcdn.com/osmedeus/-AJASvFBPI8cnc5L/images/cloud/osm-cloud-start-scan.png?fit=max&auto=format&n=-AJASvFBPI8cnc5L&q=85&s=a270d5d0a309f935992fd81dd5a26598)
-</Columns>
+
 
 在 AWS EC2 实例上运行 osmedeus cloud 的分步指南。
 

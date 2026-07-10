@@ -64,10 +64,8 @@ export OSM_LLM_MODEL=gpt-4
     analysis: "{{analyze_results_content}}"
 ```
 
-<Note>
-  导出变量基于**清理后的步骤名称**（连字符替换为下划线）。
-  名为 `analyze-results` 的步骤会生成导出 `analyze_results_llm_resp`（完整响应对象）和 `analyze_results_content`（仅文本内容）。
-</Note>
+!!! note "  导出变量基于**清理后的步骤名称**（连字符替换为下划线）。
+  名为 `analyze-results` 的步骤会生成导出 `analyze_results_llm_resp`（完整响应对象）和 `analyze_results_content`（仅文本内容）。"
 
 ### 消息角色
 

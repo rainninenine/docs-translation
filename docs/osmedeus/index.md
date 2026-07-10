@@ -19,49 +19,31 @@
 * **丰富的 CLI 界面** - 交互式数据库查询、批量函数评估、工作流 lint、进度条以及全面的使用示例
 * **REST API 和 Web UI** - 完整的 API 服务器，支持 Webhook 触发器、数据库查询和嵌入式仪表盘可视化
 
-<Card>
-  ![浅色模式下的名人堂](https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-light.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=ba8b1b76ac34683092004f9ce8986abf)
 
-  ![深色模式下的名人堂](https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-dark.png?fit=max&auto=format&n=E-vLGTp3aVA5Tivm&q=85&s=7227b6cbb7e6a9fc7290dfea70fc51c9)
-</Card>
 
 ## 快速入门
 
-<Columns cols={2}>
-  <Tile href="/getting-started/cli" title="CLI 界面">
-    ![CLI 运行预览](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-progress.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=a0c448d97d10f955df1589deb2251cc6)
-  </Tile>
 
-  <Tile href="/getting-started/web-ui" title="Web UI 界面">
-    ![Web UI 资产预览](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/web-ui/web-ui-assets.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=0ce499f1662852c2a17527d2b49a01b7)
-  </Tile>
-</Columns>
+  
 
-<Card title="快速开始" href="/quickstart" icon="rocket" horizontal>
-  立即上手，在几分钟内运行您的第一个 Osmedeus 工作流。
-</Card>
+  
+
+
+
 
 ***
 
 ## 高级安装与配置
 
-<Columns cols={2}>
-  <Card title="安装" href="/getting-started/installation" icon="download">
-    在不同平台上安装 Osmedeus 的详细说明。
-  </Card>
 
-  <Card title="配置" href="/getting-started/configuration" icon="gear">
-    配置引擎、Runner 和环境变量。
-  </Card>
+  
 
-  <Card title="部署" href="/getting-started/deployment" icon="server">
-    在分布式环境或生产环境中部署 Osmedeus。
-  </Card>
+  
 
-  <Card title="开发" href="/getting-started/development" icon="display-code">
-    为贡献或扩展 Osmedeus 的开发者提供的资源。
-  </Card>
-</Columns>
+  
+
+  
+
 
 ## 理解 Osmedeus
 

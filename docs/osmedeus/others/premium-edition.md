@@ -6,15 +6,14 @@
 
 通过 **Premium Edition** 释放 Osmedeus 的全部潜力。获取专为严肃安全专业人员设计的独家工作流、高级报告和高级工具集成。
 
-<Callout icon="desktop-arrow-down" iconType="regular">
-  **安装** - Premium 用户将在 Discord 或 Patreon 中收到自定义的一行安装命令。在任何支持的系统上运行即可开始：
+!!! tip "  **安装** - Premium 用户将在 Discord 或 Patreon 中收到自定义的一行安装命令。在任何支持的系统上运行即可开始：
 
   ```bash
   curl -fsSL https://<your-premium-domain>/premium-osmedeus-install.sh | bash
   ```
 
   将 `<your-premium-domain>` 替换为您的 Premium 访问凭证中提供的域名。
-</Callout>
+"
 
 ***
 
@@ -42,26 +41,17 @@
 
 ## Frequently Asked Questions
 
-<ResponseField name="Premium Osmedeus 包含哪些内容？">
-  <Expandable title="答案" defaultOpen="true">
-    Premium Osmedeus 包括跨多台机器的分布式扫描、独家 Premium 工作流、独家工具、云供应商集成、高级报告模板、持续监控以及开发团队的优先支持。
-  </Expandable>
-</ResponseField>
 
-<ResponseField name="系统要求是什么？">
-  <Expandable title="答案" defaultOpen="true">
-    Osmedeus Premium 运行在 Linux 上（推荐 Ubuntu/Debian）。您至少需要 2 个 CPU 核心、4 GB 内存和 20 GB 磁盘空间。安装程序将自动处理所有依赖项。
-  </Expandable>
-</ResponseField>
+  
 
-<ResponseField name="如何更新到最新版本？">
-  <Expandable title="答案" defaultOpen="true">
-    再次运行相同的安装命令。安装程序会检测现有安装并执行原地升级，保留您的配置和扫描数据。
-  </Expandable>
-</ResponseField>
 
-<ResponseField name="如何获得支持？">
-  <Expandable title="答案" defaultOpen="true">
-    Premium 用户可以直接联系开发团队。通过安装后提供的专用支持渠道联系，或在 [GitHub 仓库](https://github.com/j3ssie/osmedeus) 上提交 issue 获取社区支持。
-  </Expandable>
-</ResponseField>
+
+  
+
+
+
+  
+
+
+
+  

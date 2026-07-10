@@ -58,9 +58,7 @@ docker exec -it osmedeus-toolbox bash
 docker exec -it osmedeus-toolbox osmedeus run -m subdomain -t example.com
 ```
 
-<Note>
-  Toolbox 容器使用 Docker 卷持久化 `osmedeus-base` 和 `workspaces-osmedeus` 数据，因此扫描结果在容器重启后仍然保留。
-</Note>
+!!! note "  Toolbox 容器使用 Docker 卷持久化 `osmedeus-base` 和 `workspaces-osmedeus` 数据，因此扫描结果在容器重启后仍然保留。"
 
 ## 运行工作流
 
@@ -226,9 +224,7 @@ TZ=UTC
 WORKER_REPLICAS=2
 ```
 
-<Note>
-  使用以下命令生成安全密码：`openssl rand -base64 24`
-</Note>
+!!! note "  使用以下命令生成安全密码：`openssl rand -base64 24`"
 
 **步骤 2：配置应用程序设置**
 

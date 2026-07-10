@@ -28,12 +28,7 @@ osmedeus health
 osmedeus run -m subdomain -t example.com
 ```
 
-<Columns cols={2}>
-  <Tile href="/getting-started/cli" title="CLI Interface">
-    ![CLI 运行预览](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-progress.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=a0c448d97d10f955df1589deb2251cc6)
-  </Tile>
 
-  <Tile href="/getting-started/web-ui" title="Web UI Interface">
-    ![Web UI 资产预览](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/web-ui/web-ui-assets.png?fit=max&auto=format&n=v2F2CQFtcKul_NUM&q=85&s=0ce499f1662852c2a17527d2b49a01b7)
-  </Tile>
-</Columns>
+  
+
+  
