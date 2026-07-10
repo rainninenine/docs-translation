@@ -1,0 +1,170 @@
+site_name: 安全扫描工具文档
+site_description: Vigolium 与 Osmedeus 中文文档
+site_url: https://docs-translation.pages.dev
+repo_url: https://github.com/rain99-xyz/docs-translation
+repo_name: rain99-xyz/docs-translation
+edit_uri: ""
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 切换到暗色模式
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换到亮色模式
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/rain99-xyz/docs-translation
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - admonition
+  - toc:
+      permalink: true
+      title: 目录
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search:
+      lang: zh
+
+nav:
+  - 首页: index.md
+
+  - "Vigolium 文档":
+    - "快速入门":
+      - Vigolium 概述: vigolium/getting-started/overview.md
+      - 安装与快速开始: vigolium/getting-started/quickstart.md
+      - 选择扫描模式: vigolium/getting-started/choosing-a-mode.md
+      - 本地扫描与无状态扫描: vigolium/getting-started/native-scan.md
+      - 设置 Agent: vigolium/getting-started/setup-agent.md
+      - Agent 扫描: vigolium/getting-started/agentic-scan.md
+      - Agent 安全审计: vigolium/getting-started/agentic-security-audit.md
+      - Web UI: vigolium/getting-started/web-ui.md
+      - 输出与报告: vigolium/getting-started/output-and-reporting.md
+      - 配置参考: vigolium/getting-started/configuration.md
+      - 备忘录: vigolium/getting-started/cheat-sheet.md
+      - 服务器模式：通过 API 导入数据: vigolium/getting-started/server-and-ingestion.md
+    - "本地扫描":
+      - 扫描模式概述: vigolium/native-scan/scanning-modes-overview.md
+      - 扫描剖析: vigolium/native-scan/how-it-works.md
+      - 黑箱扫描: vigolium/native-scan/strategies.md
+      - 扫描模块参考: vigolium/native-scan/modules-reference.md
+      - 认证扫描: vigolium/native-scan/authentication.md
+      - 扫描范围：模块调度机制: vigolium/native-scan/scan-scope.md
+      - "扫描阶段":
+        - 内容发现 (Deparos): vigolium/native-scan/phases/discovery.md
+        - 浏览器爬取 (Spitolas): vigolium/native-scan/phases/spidering.md
+        - 已知漏洞扫描 (KnownIssueScan): vigolium/native-scan/phases/known-issue-scan.md
+        - 动态评估：主动漏洞扫描: vigolium/native-scan/phases/audit.md
+        - 插件扫描: vigolium/native-scan/phases/extension.md
+    - "Agent 扫描":
+      - Agent 模式工作原理: vigolium/agentic-scan/how-it-works.md
+      - Agent 模式: vigolium/agentic-scan/agent-mode.md
+      - Autopilot: vigolium/agentic-scan/autopilot.md
+      - Swarm: vigolium/agentic-scan/swarm.md
+      - Olium Agent: vigolium/agentic-scan/olium.md
+      - 在 Claude Code & Codex 中使用 Vigolium: vigolium/agentic-scan/using-vigolium-in-your-agent.md
+    - "体系结构":
+      - 体系结构概述: vigolium/architecture/overview.md
+      - 本地扫描体系结构: vigolium/architecture/native-scan.md
+      - Agent 扫描体系结构: vigolium/architecture/agentic-scan.md
+      - 数据与持久化体系结构: vigolium/architecture/data-and-storage.md
+      - 服务器与 API 体系结构: vigolium/architecture/server-and-api.md
+    - "服务器模式":
+      - 运行服务器: vigolium/server-mode/running-the-server.md
+      - 导入 HTTP 流量: vigolium/server-mode/ingestion.md
+      - 透明代理: vigolium/server-mode/proxy.md
+    - "自定义":
+      - 自定义与扩展 Vigolium: vigolium/customization/extending-vigolium.md
+      - 编写插件: vigolium/customization/writing-extensions.md
+    - "API 参考":
+      - API 概述: vigolium/api-overview.md
+      - API 参考概览: vigolium/api-references/overview.md
+      - 身份验证: vigolium/api-references/authentication.md
+      - 扫描: vigolium/api-references/scan.md
+      - 扫描（含存储）: vigolium/api-references/scan-with-storage.md
+      - 漏洞发现: vigolium/api-references/findings.md
+      - HTTP 记录: vigolium/api-references/http-records.md
+      - 数据导入: vigolium/api-references/ingestion.md
+      - 模块: vigolium/api-references/modules.md
+      - 项目: vigolium/api-references/projects.md
+      - 范围: vigolium/api-references/scope.md
+      - 统计: vigolium/api-references/stats.md
+      - 存储: vigolium/api-references/storage.md
+      - OAST 交互: vigolium/api-references/oast-interactions.md
+      - Agent: vigolium/api-references/agent.md
+      - 配置: vigolium/api-references/config.md
+      - 数据库: vigolium/api-references/database.md
+      - 诊断: vigolium/api-references/diagnostics.md
+      - 插件: vigolium/api-references/extensions.md
+    - "其他":
+      - 项目与多租户: vigolium/others/projects.md
+      - 开源审计案例: vigolium/others/audit-report.md
+      - CLI 参考: vigolium/others/cli-references.md
+      - API 参考索引: vigolium/others/api-references.md
+      - 安全警告: vigolium/others/security-warning.md
+      - 更新日志: vigolium/others/changelog.md
+      - FAQ: vigolium/others/faq.md
+
+  - "Osmedeus 文档":
+    - "API":
+      - API 概述: osmedeus/api/README.md
+      - 安装: osmedeus/api/install.md
+      - 身份验证: osmedeus/api/authentication.md
+      - 运行: osmedeus/api/runs.md
+      - 工作流: osmedeus/api/workflows.md
+      - 步骤: osmedeus/api/steps.md
+      - 项目空间: osmedeus/api/workspaces.md
+      - 快照: osmedeus/api/snapshots.md
+      - 产物: osmedeus/api/artifacts.md
+      - 资产: osmedeus/api/assets.md
+      - 漏洞: osmedeus/api/vulnerabilities.md
+      - 函数: osmedeus/api/functions.md
+      - 事件日志: osmedeus/api/event-logs.md
+      - 事件接收器: osmedeus/api/event-receiver.md
+      - 调度: osmedeus/api/schedules.md
+      - 分布式: osmedeus/api/distributed.md
+      - LLM: osmedeus/api/llm.md
+      - 设置: osmedeus/api/settings.md
+      - 系统: osmedeus/api/system.md
+      - 上传: osmedeus/api/uploads.md
+      - 数据库: osmedeus/api/database.md
+      - 公开接口: osmedeus/api/public.md
+      - 参考: osmedeus/api/reference.md
+    - "云部署":
+      - 云使用指南: osmedeus/cloud/cloud-usage-guide.md
+      - 云使用示例: osmedeus/cloud/cloud-usage-examples.md
+      - 云快速参考: osmedeus/cloud/cloud-quick-reference.md
+      - 云备忘录: osmedeus/cloud/cloud-cheatsheet.md
+      - AWS 供应商: osmedeus/cloud/cloud-provider-aws.md
+      - GCP 供应商: osmedeus/cloud/cloud-provider-gcp.md
+      - Hetzner 供应商: osmedeus/cloud/cloud-provider-hetzner.md
