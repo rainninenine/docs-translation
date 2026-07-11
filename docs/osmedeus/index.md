@@ -19,31 +19,27 @@
 * **丰富的 CLI 界面** - 交互式数据库查询、批量函数评估、工作流 lint、进度条以及全面的使用示例
 * **REST API 和 Web UI** - 完整的 API 服务器，支持 Webhook 触发器、数据库查询和嵌入式仪表盘可视化
 
+![Hall of Fame](https://mintcdn.com/osmedeus/E-vLGTp3aVA5Tivm/images/introduction/hall-of-fame-light.png)
+
 
 
 ## 快速入门
 
+[![CLI 界面](/getting-started/cli)](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/cli/cli-run-progress.png)
+[![Web UI](/getting-started/web-ui)](https://mintcdn.com/osmedeus/v2F2CQFtcKul_NUM/images/web-ui/web-ui-assets.png)
 
-  
-
-  
-
-
-
+[🚀 快速入门 →](/quickstart) — 立即开始运行你的第一个 Osmedeus 工作流。
 
 ***
 
 ## 高级安装与配置
 
-
-  
-
-  
-
-  
-
-  
-
+| 页面 | 描述 |
+|:----|:-----|
+| [安装](/getting-started/installation) | 在各平台上安装 Osmedeus 的详细说明 |
+| [设置](/getting-started/configuration) | 配置引擎、Runner 和环境变量 |
+| [部署](/getting-started/deployment) | 在分布式环境或生产环境中部署 Osmedeus |
+| [开发](/getting-started/development) | 为 Osmedeus 贡献代码或扩展的开发者资源 |
 
 ## 理解 Osmedeus
 
