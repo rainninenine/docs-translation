@@ -24,7 +24,7 @@
 ### 快速入口
 
 - [API 概述](osmedeus/api/README.md) — Osmedeus API 文档
-- [云使用指南](osmedeus/cloud/cloud-usage-guide.md) — 云部署与使用
+- [云使用指南](osmedeus/cloud/usage-guide.md) — 云部署与使用
 
 ---
 
